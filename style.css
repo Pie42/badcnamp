@@ -1,0 +1,70 @@
+p.track-select {
+    margin-block-end: 0px;
+    margin-block-start: 0px;
+    /* width: fit-content */
+}
+
+p.track-select:hover {
+    cursor: pointer
+}
+
+p#statusLabel {
+    display: hidden
+}
+
+.buttons-div p {
+    font-size: 48;
+    vertical-align: text-bottom
+}
+
+input {
+    position: sticky;
+    top: 0;
+    width: inherit;
+}
+
+button {
+    position: sticky;
+    top: 0;
+    width: auto;
+}
+
+select {
+    position: sticky;
+    top: 1;
+    width: min-content;
+}
+
+img {
+    width: 100%;
+}
+
+body {
+    color: #e2ffef;
+    background: #0c0909;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    margin: 0px;
+    padding: 0px;
+}
+
+.menu {
+    background: #100c0c;
+    border: solid;
+    border-width: 1px;
+    border-radius: 3px;
+}
+
+.menu > p:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+p.tab-selected {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+body > div {
+    /*display: inline-block;*/
+    position: fixed;
+    top: 0;
+    overflow: scroll;
+}
