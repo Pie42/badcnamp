@@ -1,17 +1,24 @@
-import { createP, createLongP } from "../Util.js";
-import Menu from "./Menu.js";
+import { createP, createLongP } from '../Util.js';
+//import Menu from "./Menu.js";
 
 export default class ArtistsView {
     constructor(manager, data) {
         //this.menu = manager.menu;
-        this.menu = new Menu();
+        //this.menu = new Menu();
         this.library = manager.library;
         this.artists = this.library.artists;
         this.data = data;
         this.div = document.createElement('div');
-        let artists = Object.keys(this.artists).sort((a, b) => {
-            return (b.toLocaleLowerCase() < a.toLocaleLowerCase()) * 2 - 1;
-        });
+        let artists = this.artists;
+        if (data?.sort == 'length') {
+            artists = Object.entries(artists)
+                .sort((a, b) => b[1].tracks.length - a[1].tracks.length)
+                .map((i) => i[0]);
+        } else {
+            artists = Object.keys(artists).sort((a, b) => {
+                return (b.toLocaleLowerCase() < a.toLocaleLowerCase()) * 2 - 1;
+            });
+        }
         for (let i of artists) {
             let artistDiv = document.createElement('div'),
                 artistName = createLongP(

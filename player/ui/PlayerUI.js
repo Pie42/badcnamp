@@ -1,12 +1,19 @@
+import { isOutdated } from '../Util.js';
+import ScrobbleUI from './player/ScrobbleUI.js';
+
 export default class PlayerUI {
     constructor(library) {
         this.div = document.createElement('div');
         this.div.style.width = '50%';
         this.div.style.height = '100%';
+        this.div.style.borderLeft = 'solid #0f0c0c';
+        this.div.style.borderWidth = '1px';
         this.library = library;
         this.audio = library.audio;
-        this.scope = this.library.tracks;
+        //this.scope = this.library.tracks;
         this.mode = 'random';
+        // automatically queue (and fetch) tracks to reduce loading times
+        this.autoQueue = true;
         //this.div.appendChild(this.audio);
         //this.audio.controls = true;
     }
@@ -15,11 +22,15 @@ export default class PlayerUI {
         let thumbnaildiv = document.createElement('div');
         thumbnaildiv.classList.add('thumbnail');
         let cover = document.createElement('img');
-        cover.style.width = '80%';
+        cover.style.width = '50%';
         thumbnaildiv.appendChild(cover);
         this.div.appendChild(thumbnaildiv);
         cover.style.margin = '0 auto';
         cover.style.display = 'block';
+
+        let favicon = document.createElement('link');
+        favicon.rel = 'shortcut icon';
+        document.head.appendChild(favicon);
 
         let title = document.createElement('h1');
         this.div.appendChild(title);
@@ -41,45 +52,25 @@ export default class PlayerUI {
         this.audio.onstalled = async () => {
             let t = this.audio.currentTime;
             //await this.library.refetch(this.library.playing.album);
-            await this.library.play(this.library.playing);
+            await this.library.play(
+                this.library.playing,
+                this.library.playingIndex
+            );
             this.audio.currentTime = t;
             //this.audio.play();
         };
-        //scrobbling stuff
-        let scrbldiv = document.createElement('div');
-        scrbldiv.classList.add('ctl');
-        scrbldiv.classList.add('tracktitle');
-        //this.audio.classList.add('ctl');
-        let scrblartist = document.createElement('p');
-        scrblartist.id = 'newPlayerArtistName';
-        let scrbltitle = document.createElement('a');
-        let scrblalbum = document.createElement('div');
-        let cTime = document.createElement('p');
-        cTime.classList.add('start');
-        cTime.style.display = 'none';
-        let duration = document.createElement('p');
-        duration.classList.add('finish');
-        duration.style.display = 'none';
-        let pausebutton = document.createElement('div');
-        pausebutton.style.width = pausebutton.style.height = '0%';
-        pausebutton.classList.add('btnStop');
-        scrbldiv.appendChild(cTime);
-        scrbldiv.appendChild(duration);
-        scrbldiv.appendChild(scrblartist);
-        scrbldiv.appendChild(scrbltitle);
-        scrbldiv.appendChild(scrblalbum);
-        scrbldiv.style.display = 'none';
-        this.div.appendChild(scrbldiv);
-        //this.div.appendChild(pausebutton);
+
+        this.scrobbleui = new ScrobbleUI(this);
+        this.scrobbleui.registerEvents();
+        this.div.appendChild(this.scrobbleui.div);
+
         this.audio.onloadedmetadata = () => {
             let playing = this.library.playing;
             cover.src = playing.album.image;
+            favicon.href = playing.album.image;
             title.innerHTML = playing.title;
             artist.innerHTML = playing.rawArtist;
-            scrbltitle.innerHTML = playing.title;
-            scrblartist.innerHTML = playing.rawArtist;
             album.innerHTML = `From "${playing.album.title}"`;
-            scrblalbum.setAttribute('title', playing.album.title);
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.metadata = new MediaMetadata({
                     title: playing.title,
@@ -87,12 +78,8 @@ export default class PlayerUI {
                     artwork: [{ src: playing.album.image }],
                 });
             }
-            duration.innerHTML = this.tformat(
-                this.audio.duration,
-                this.audio.duration
-            );
         };
-        this.audio.onplaying = () => {
+        this.audio.addEventListener('playing', () => {
             if ('mediaSession' in navigator) {
                 let playing = this.library.playing;
                 navigator.mediaSession.metadata = new MediaMetadata({
@@ -101,21 +88,7 @@ export default class PlayerUI {
                     artwork: [{ src: playing.album.image }],
                 });
             }
-            //pausebutton.classList.remove('btnStop');
-            this.div.appendChild(pausebutton);
-        };
-        this.audio.onpause = () => {
-            //pausebutton.classList.add('btnStop');
-            try {
-                this.div.removeChild(pausebutton);
-            } catch (e) {}
-        };
-        this.audio.ontimeupdate = () => {
-            cTime.innerHTML = this.tformat(
-                this.audio.currentTime,
-                this.audio.duration
-            );
-        };
+        });
         this.audio.onended = this.next.bind(this);
         this.div.appendChild(this.audio);
         this.audio.controls = true;
@@ -125,11 +98,14 @@ export default class PlayerUI {
                 'seekbackward',
                 function () {
                     this.audio.currentTime -= 5;
-                }
+                }.bind(this)
             );
-            navigator.mediaSession.setActionHandler('seekforward', function () {
-                this.audio.currentTime += 5;
-            });
+            navigator.mediaSession.setActionHandler(
+                'seekforward',
+                function () {
+                    this.audio.currentTime += 5;
+                }.bind(this)
+            );
             navigator.mediaSession.setActionHandler(
                 'previoustrack',
                 this.prev.bind(this)
@@ -144,15 +120,89 @@ export default class PlayerUI {
     }
 
     next() {
-        let t = this.library.playing,
-            n = this.library.playing;
-        if (this.scope.length > 1) {
-            while (t == n) {
-                n = this.scope[(Math.random() * this.scope.length) | 0];
+        /*let t = this.library.playing,
+            k = this.library.playing,
+            n = this.library.playingIndex,
+            j = this.library.playingIndex;
+        if (this.library.queue.length > 0) {
+            let h = this.library.queue.shift();
+            if (h.length) {
+                k = h[0];
+                n = h[1];
+            } else {
+                k = h;
+                n = null;
             }
+        } else if (this.library.scope.length > 1) {
+            if (this.mode == 'random') {
+                for (let i = 5; i > 0 && j == n; i--) {
+                    n = (Math.random() * this.library.scope.length) | 0;
+                    k = this.library.scope[n];
+                }
+            } else if (this.mode == 'all') {
+                n = (n + 1) % this.library.scope.length;
+                k = this.library.scope[n];
+            } else if (this.mode == 'one') {
+                // do nothing
+            }
+        }*/
+        let k, n;
+        if (this.library.queue.length > 0) {
+            let h = this.library.queue.shift();
+            if (h.length) {
+                k = h[0];
+                n = h[1];
+            } else {
+                k = h;
+                n = null;
+            }
+        } else {
+            [k, n] = this.getNextTrack(
+                this.library.playing,
+                this.library.playingIndex
+            );
         }
-        this.library.prev.push(n);
-        this.library.play(n);
+        this.prepareNextTrack();
+        //this.library.queue.push([nextTrack, nextIndex]);
+        this.library.prev.unshift([
+            this.library.playing,
+            this.library.playingIndex,
+        ]);
+        this.library.play(k, n);
+    }
+
+    getNextTrack(playing, playingIndex) {
+        let t = playing,
+            k = playing,
+            n = playingIndex,
+            j = playingIndex;
+        if (this.mode == 'random') {
+            for (let i = 5; i > 0 && j == n; i--) {
+                n = (Math.random() * this.library.scope.length) | 0;
+                k = this.library.scope[n];
+            }
+        } else if (this.mode == 'all') {
+            n = (n + 1) % this.library.scope.length;
+            k = this.library.scope[n];
+        } else if (this.mode == 'one') {
+            // do nothing
+        }
+        return [k, n];
+    }
+
+    prepareNextTrack() {
+        let temp;
+        let [nextTrack, nextIndex] =
+            this.library.queue.length > 0
+                ? this.library.queue[0].length
+                    ? [this.library.queue[0], null]
+                    : this.library.queue[0]
+                : ((temp = this.getNextTrack(k, n)),
+                  this.library.queue.push(temp),
+                  temp);
+        if (isOutdated(nextTrack)) {
+            this.library.refetch(nextTrack.album);
+        }
     }
 
     prev() {
@@ -160,7 +210,17 @@ export default class PlayerUI {
             this.audio.currentTime = 0;
         } else {
             if (this.library.prev.length > 0) {
-                this.library.play(this.library.prev.unshift());
+                let p, n;
+                let h = this.library.queue.shift();
+                if (h.length) {
+                    p = h[0];
+                    n = h[1];
+                } else {
+                    p = h;
+                    n = null;
+                }
+                this.library.play(p, n);
+                this.library.queue.unshift([p, n]);
             }
         }
     }

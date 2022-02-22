@@ -2,16 +2,23 @@ import DataLoader from '../state/DataLoader.js';
 import Album from './Album.js';
 import { path } from '../constants/PlayerConstants.js';
 import { parseTralbumData } from '../Util.js';
+import { doTheFunkyTitleThing } from '../Util.js';
+import { stupidRegex } from '../Util.js';
+import Playlist from './Playlist.js';
+import { isOutdated } from '../Util.js';
 
 export default class LibraryManager {
     constructor() {
         this.tracks = [];
         this.albums = [];
         this.artists = {};
+        this.playlists = [];
         this.audio = document.createElement('audio');
         this.playing = undefined;
+        this.playingIndex = undefined;
         this.queue = [];
         this.prev = [];
+        this.scope = [];
         this.profile = undefined;
     }
 
@@ -26,6 +33,7 @@ export default class LibraryManager {
                 currentAlbum[2][0].split(' - ');
             albumData.tracks = currentAlbum[2][1];
             this.albums.push(new Album(albumData, this.artists, this.tracks));
+            this.albums[this.albums.length - 1].id = +i;
         }
 
         for (let i in this.artists) {
@@ -40,14 +48,25 @@ export default class LibraryManager {
             }
             artist.rawName = t;
         }
+
+        let playlists = DataLoader.get(`playlists~${profile}`);
+        for (let i in playlists) {
+            let currentPlaylist = playlists[i],
+                name = currentPlaylist[0],
+                image = currentPlaylist[1],
+                tracks = currentPlaylist[2].map(
+                    (i) => this.albums[i[0]].tracks[i[1]]
+                );
+            this.playlists.push(new Playlist(name, image, tracks));
+            this.playlists[this.playlists.length - 1].id = +i;
+        }
     }
 
-    async play(track) {
+    async play(track, index, scope = this.scope || this.tracks) {
         this.playing = track;
-        if (
-            !track.file ||
-            track.file.match(/ts=(.+?)\&/)[1] * 1000 - Date.now() < 5000000
-        ) {
+        this.playingIndex = index ?? this.playingIndex;
+        this.scope = scope;
+        if (isOutdated(track)) {
             await this.refetch(track.album);
         }
         this.audio.src = track.file;
@@ -55,7 +74,7 @@ export default class LibraryManager {
         this.audio.play();
     }
 
-    async refetch(album) {
+    async refetch(album, reset = false) {
         await fetch(path + album.link)
             .then(
                 (i) => i.text(),
@@ -65,24 +84,47 @@ export default class LibraryManager {
                 let tralbumData = parseTralbumData(i),
                     trackInfo = tralbumData.trackinfo,
                     trackPointer = 0,
-                    tracks = album.tracks;
-                console.log(tralbumData, trackInfo);
+                    tracks = album.tracks,
+                    [titleReplace, splitCharacter] =
+                        doTheFunkyTitleThing(trackInfo);
                 for (let j of trackInfo) {
-                    let parsedTitle = j.title.match(/^\d*\.? ?(.+) - (.+?)$/),
+                    /*let parsedTitle = j.title.replace(titleReplace, '');
+                    parsedTitle =
+                        parsedTitle.match(/^(.+?) (\p{Dash}) (.+)$/u) ||
+                        parsedTitle.match(stupidRegex);
+                    let trackArtist =
+                            j.artist ||
+                            (parsedTitle?.[1]?.length
+                                ? parsedTitle?.[1]
+                                : tralbumData.artist),
+                        trackTitle = parsedTitle?.[3]?.length
+                            ? parsedTitle?.[3]
+                            : j.title.replace(titleReplace, '');*/
+                    let parsedTitle = j.title
+                            .replace(titleReplace, '')
+                            .match(splitCharacter),
                         trackArtist =
-                            j.artist || parsedTitle?.[1] || tralbumData.artist,
-                        trackTitle = parsedTitle?.[2] || j.title;
+                            j.artist ||
+                            (parsedTitle ? parsedTitle[1] : tralbumData.artist),
+                        trackTitle = parsedTitle
+                            ? parsedTitle[3]
+                            : j.title.replace(titleReplace, '');
+                    // needs to have the ?. for if you delete the last track in an album
                     if (
-                        trackTitle == tracks[trackPointer].title &&
-                        trackArtist == tracks[trackPointer].rawArtist
+                        trackTitle == tracks?.[trackPointer]?.title &&
+                        trackArtist == tracks?.[trackPointer]?.rawArtist
                     ) {
                         if (j?.file?.['mp3-128']) {
                             tracks[trackPointer].file = j.file['mp3-128'];
                         }
                         trackPointer++;
-                    }
-                    else {
-                        console.log(tracks[trackPointer], trackTitle, trackArtist);
+                    } else {
+                        console.log(
+                            tracks[trackPointer],
+                            trackTitle,
+                            trackArtist,
+                            parsedTitle
+                        );
                     }
                 }
             });
@@ -90,12 +132,14 @@ export default class LibraryManager {
     }
 
     async add(link) {
-        fetch(link)
+        await fetch(link)
             .then((i) => i.text())
             .then((i) => {
                 let tralbumData = parseTralbumData(i),
                     trackInfo = tralbumData.trackinfo,
-                    data = {};
+                    data = {},
+                    [titleReplace, splitCharacter] =
+                        doTheFunkyTitleThing(trackInfo);
                 data.artist = tralbumData.current.artist || tralbumData.artist;
                 data.title = tralbumData.current.title;
                 data.tracks = [];
@@ -103,16 +147,33 @@ export default class LibraryManager {
                 data.image = i.match(
                     /<a class="popupImage"[^]+?<img src="(.+?)"/
                 )[1];
-                for (let i in trackInfo) {
-                    let parsedTitle = trackInfo[i].title.match(
-                            /^\d*?(?:\. | |\.)?(.+) - (.+?)$/
-                        ),
-                        trackArtist =
+                for (let j of trackInfo) {
+                    /*let parsedTitle = trackInfo[i].title.replace(
+                        titleReplace,
+                        ''
+                    );
+                    parsedTitle =
+                        parsedTitle.match(/^(.+?) (\p{Dash}) (.+)$/u) ||
+                        parsedTitle.match(stupidRegex);
+                    let trackArtist =
                             trackInfo[i].artist ||
-                            parsedTitle?.[1] ||
-                            tralbumData.artist,
-                        trackTitle = parsedTitle?.[2] || trackInfo[i].title;
+                            (parsedTitle?.[1]?.length
+                                ? parsedTitle?.[1]
+                                : tralbumData.artist),
+                        trackTitle = parsedTitle?.[1]?.length
+                            ? parsedTitle?.[3]
+                            : trackInfo[i].title.replace(titleReplace, '');*/
+                    let parsedTitle = j.title
+                            .replace(titleReplace, '')
+                            .match(splitCharacter),
+                        trackArtist =
+                            j.artist ||
+                            (parsedTitle ? parsedTitle[1] : tralbumData.artist),
+                        trackTitle = parsedTitle
+                            ? parsedTitle[3]
+                            : j.title.replace(titleReplace, '');
                     data.tracks.push([trackArtist, trackTitle]);
+                    //console.log(parsedTitle, trackArtist, trackTitle);
                 }
                 let album = new Album(data, this.artists, this.tracks),
                     toDelete = [];
@@ -126,34 +187,62 @@ export default class LibraryManager {
                 for (let i of toDelete) {
                     album.tracks.splice(i, 1);
                 }
+                album.id = this.albums.length;
                 this.albums.push(album);
                 this.save();
+                this.uimanager.browseui.refresh(false);
             });
+        return;
     }
 
-    export(album) {
+    albumExport(album) {
         return [
             album.image,
             album.link,
             [
                 `${album.artist} - ${album.title}`,
-                album.tracks.map((i) => [i.rawArtist, i.title]),
+                album.tracks.map((i, j) => [i.rawArtist, i.title]),
             ],
         ];
     }
 
-    fullExport() {
+    fullAlbumExport() {
         let albums = {},
             key = 0;
         for (let i of this.albums) {
-            albums[key] = this.export(i);
+            albums[key] = this.albumExport(i);
+            i.id = key;
             key++;
         }
         return albums;
     }
 
+    playlistExport(playlist) {
+        return [
+            playlist.name,
+            playlist.image,
+            playlist.tracks.map((i) => [i.album.id, i.id]),
+        ];
+    }
+
+    fullPlaylistExport() {
+        let playlists = [];
+        for (let i in this.playlists) {
+            this.playlists[i].id = +i;
+            playlists.push(this.playlistExport(this.playlists[i]));
+        }
+        return playlists;
+    }
+
     save() {
-        DataLoader.set(`albums~${this.profileManager.activeProfile}`, this.fullExport());
+        DataLoader.set(
+            `albums~${this.profileManager.activeProfile}`,
+            this.fullAlbumExport()
+        );
+        DataLoader.set(
+            `playlists~${this.profileManager.activeProfile}`,
+            this.fullPlaylistExport()
+        );
     }
 
     clear() {
@@ -163,5 +252,53 @@ export default class LibraryManager {
         this.playing = undefined;
         this.queue = [];
         this.prev = [];
+        this.playlists = [];
+    }
+
+    removeTrack(track) {
+        track.album.tracks.splice(track.album.tracks.indexOf(track), 1);
+        this.tracks.splice(this.tracks.indexOf(track), 1);
+        this.artists[track.artist].tracks.splice(
+            this.artists[track.artist].tracks.indexOf(track),
+            1
+        );
+    }
+
+    removeAlbum(album) {
+        let t = [...album.tracks];
+        for (let i of t) {
+            this.removeTrack(i);
+        }
+        for (let i in album.albumArtists) {
+            this.artists[i].albums.splice(
+                this.artists[i].albums.indexOf(album),
+                1
+            );
+        }
+        this.albums.splice(this.albums.indexOf(album), 1);
+        this.save();
+    }
+
+    async fix(album) {
+        let index = this.albums.indexOf(album);
+        this.removeAlbum(album);
+        await this.add(album.link);
+        this.albums.splice(index, 0, this.albums.pop());
+        //this.uimanager.refresh();
+        //this.uimanager.back();
+        await this.uimanager.browseui.switchUI('album', this.albums[index]);
+        this.uimanager.browseui.history.pop();
+    }
+
+    refreshTrackIds(album) {
+        for (let i in album.tracks) {
+            album.tracks[i].id = +i;
+        }
+    }
+
+    createPlaylist(name) {
+        let p = new Playlist(name);
+        p.id = this.playlists.length;
+        this.playlists.push(p);
     }
 }

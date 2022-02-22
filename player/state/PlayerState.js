@@ -15,6 +15,7 @@ export default class PlayerState {
         this.library.profileManager = this.profileManager;
         this.profileManager.library = this.library;
         this.profileManager.uimanager = this.uimanager;
+        this.library.uimanager = this.uimanager;
         this.library.load(this.profileManager.activeProfile);
         this.uimanager.create();
     }

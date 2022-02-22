@@ -5,5 +5,7 @@ export default class Track {
         this.rawArtist = data.artist;
         this.album = data.album;
         this.file = data.file || '';
+        this.playlists = data.playlists || {};
+        this.id = data.id;
     }
 }

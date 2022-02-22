@@ -1,10 +1,10 @@
-p.track-select {
+p.pointer-hover {
     margin-block-end: 0px;
     margin-block-start: 0px;
     /* width: fit-content */
 }
 
-p.track-select:hover {
+p.pointer-hover:hover {
     cursor: pointer
 }
 
@@ -40,21 +40,23 @@ img {
 }
 
 body {
-    color: #e2ffef;
-    background: #0c0909;
+    color: #8ca195;
+    background: #080c0c;
     font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
     margin: 0px;
     padding: 0px;
 }
 
 .menu {
-    background: #100c0c;
+    background: #0c0f0c;
     border: solid;
     border-width: 1px;
     border-radius: 3px;
+    position: absolute;
+    z-index: 100;
 }
 
-.menu > p:hover {
+div.menu-button:hover {
     background: rgba(255, 255, 255, 0.2);
 }
 
@@ -67,4 +69,46 @@ body > div {
     position: fixed;
     top: 0;
     overflow: scroll;
+}
+
+.track-div {
+    display: flex;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    border-radius: 8px;
+    transition-duration: 0.25s;
+    cursor: pointer;
+}
+
+.track-div.fancy {
+    padding: 16px;
+}
+
+.track-div:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transition-duration: 0.25s;
+}
+
+.track-div.selected {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.long-p {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    margin-right: 8px;
+    display: block;
+}
+
+.long-div {
+    width: 100%;
+    overflow: hidden;
+    flex-grow: 1;
+}
+
+.browse-tab {
+    display: inline;
 }

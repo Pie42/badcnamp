@@ -7,7 +7,13 @@ export default class AlbumsView {
         this.albums = this.library.albums;
         this.data = data;
         this.div = document.createElement('div');
-        for (let i of this.albums) {
+        let albums = this.albums.sort(
+            (a, b) =>
+                (b.title.toLocaleLowerCase() < a.title.toLocaleLowerCase()) *
+                    2 -
+                1
+        );
+        for (let i of albums) {
             let albumDiv = document.createElement('div'),
                 albumTitle = createLongP(
                     albumDiv,

@@ -10,11 +10,15 @@ export default class Album {
         this.albumArtists = {};
         //technically a unix timestamp but whatever
         this.date = 0;
-        for (let i of data.tracks) {
-            let trackData = {};
+        //for use in exporting everything (mostly for making playlists lol)
+        this.id = undefined;
+        for (let j in data.tracks) {
+            let i = data.tracks[j],
+                trackData = {};
             trackData.title = i[1];
             trackData.artist = i[0];
             trackData.album = this;
+            trackData.id = +j;
             let track = new Track(trackData),
                 artist = trackData.artist.toLocaleLowerCase();
             artists[artist] = artists[artist] || {

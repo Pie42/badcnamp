@@ -1,3 +1,4 @@
+import { createTrackDiv } from '../Util.js';
 import { createLongP, createP } from '../Util.js';
 
 export default class ArtistView {
@@ -54,10 +55,12 @@ export default class ArtistView {
         let trackHeader = document.createElement('h4');
         trackHeader.innerHTML = 'Tracks';
         this.div.appendChild(trackHeader);
-        for (let i of tracks) {
-            createLongP(this.div, i.title, () => {
-                this.library.play(i);
-            });
+        for (let j in tracks) {
+            /*createLongP(this.div, i.title, () => {
+                this.library.play(i, tracks);
+            });*/
+            let i = this.tracks[j];
+            createTrackDiv(this.div, i.title, i, this.library, j, tracks);
         }
     }
 }

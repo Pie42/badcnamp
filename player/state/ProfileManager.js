@@ -11,6 +11,7 @@ export default class ProfileManager {
         this.profiles = DataLoader.get('profiles', '["Default"]');
         this.activeProfile =
             DataLoader.getRaw('active-profile') || this.profiles[0];
+        this.activeProfileIndex = this.profiles.indexOf(this.activeProfile);
     }
 
     switchProfiles(profile) {
@@ -21,6 +22,7 @@ export default class ProfileManager {
             this.library.clear();
             this.library.load(this.activeProfile);
             this.uimanager.refresh();
+            DataLoader.setRaw('active-profile', this.activeProfile);
         }
     }
 
