@@ -1,4 +1,5 @@
 import { isOutdated } from '../Util.js';
+import ControlsUI from './player/ControlsUI.js';
 import ScrobbleUI from './player/ScrobbleUI.js';
 
 export default class PlayerUI {
@@ -34,14 +35,16 @@ export default class PlayerUI {
 
         let title = document.createElement('h1');
         this.div.appendChild(title);
-        let artist = document.createElement('h3');
+        //holds h3 elements
+        let artist = document.createElement('div');
+        artist.style.display = 'block';
         this.div.appendChild(artist);
         title.style.textAlign = artist.style.textAlign = 'center';
-        artist.onclick = () => {
+        /*artist.onclick = () => {
             if (this.library.playing) {
                 this.browseui.switchUI('artist', this.library.playing.artist);
             }
-        };
+        };*/
         let album = document.createElement('p');
         album.onclick = () => {
             if (this.library.playing) {
@@ -51,7 +54,7 @@ export default class PlayerUI {
         this.div.appendChild(album);
         this.audio.onstalled = async () => {
             let t = this.audio.currentTime;
-            //await this.library.refetch(this.library.playing.album);
+            await this.library.refetch(this.library.playing.album);
             await this.library.play(
                 this.library.playing,
                 this.library.playingIndex
@@ -60,21 +63,53 @@ export default class PlayerUI {
             //this.audio.play();
         };
 
+        this.audio.addEventListener('error', async () => {
+            let t = this.audio.currentTime;
+            await this.library.refetch(this.library.playing.album);
+            await this.library.play(
+                this.library.playing,
+                this.library.playingIndex
+            );
+            this.audio.currentTime = t;
+        });
+
         this.scrobbleui = new ScrobbleUI(this);
         this.scrobbleui.registerEvents();
         this.div.appendChild(this.scrobbleui.div);
+
+        this.controlsui = new ControlsUI(this);
+        this.div.appendChild(this.controlsui.div);
 
         this.audio.onloadedmetadata = () => {
             let playing = this.library.playing;
             cover.src = playing.album.image;
             favicon.href = playing.album.image;
             title.innerHTML = playing.title;
-            artist.innerHTML = playing.rawArtist;
+            //artist.innerHTML = playing.rawArtistString;
+            // fastest way as per https://jsben.ch/DwfAd
+            artist.innerHTML = '';
+            for (let i in playing.rawArtists.splitters) {
+                let currentArtist = playing.rawArtists.splitters[i],
+                    artisth3 = document.createElement('h3');
+                artisth3.style.display = 'inline';
+                artisth3.innerHTML = currentArtist;
+                if (+i % 2 == 0) {
+                    artisth3.onclick = () => {
+                        if (this.library.playing) {
+                            this.browseui.switchUI(
+                                'artist',
+                                currentArtist.toLocaleLowerCase()
+                            );
+                        }
+                    };
+                }
+                artist.appendChild(artisth3);
+            }
             album.innerHTML = `From "${playing.album.title}"`;
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.metadata = new MediaMetadata({
                     title: playing.title,
-                    artist: playing.rawArtist,
+                    artist: playing.rawArtistString,
                     artwork: [{ src: playing.album.image }],
                 });
             }
@@ -84,12 +119,17 @@ export default class PlayerUI {
                 let playing = this.library.playing;
                 navigator.mediaSession.metadata = new MediaMetadata({
                     title: playing.title,
-                    artist: playing.rawArtist,
+                    artist: playing.rawArtistString,
+                    album: playing.album.title,
                     artwork: [{ src: playing.album.image }],
                 });
             }
         });
-        this.audio.onended = this.next.bind(this);
+        //this.audio.onended = this.next.bind(this);
+        this.audio.addEventListener('ended', () => {
+            this.library.playing.plays++;
+            this.next();
+        });
         this.div.appendChild(this.audio);
         this.audio.controls = true;
 
@@ -146,8 +186,13 @@ export default class PlayerUI {
                 // do nothing
             }
         }*/
-        let k, n;
-        if (this.library.queue.length > 0) {
+        //let [k, n] = this.library.scope2.nextTrack;
+        let k = this.library.scope2.next();
+        /*if (k == undefined) {
+            this.library.scope2.loop();
+            k = this.library.scope2.nextTrack;
+        }
+        /*if (this.library.queue.length > 0) {
             let h = this.library.queue.shift();
             if (h.length) {
                 k = h[0];
@@ -162,17 +207,17 @@ export default class PlayerUI {
                 this.library.playingIndex
             );
         }
-        this.prepareNextTrack();
-        //this.library.queue.push([nextTrack, nextIndex]);
         this.library.prev.unshift([
             this.library.playing,
             this.library.playingIndex,
-        ]);
-        this.library.play(k, n);
+        ]);*/
+        this.library.play(k);
+        this.prepareNextTrack();
+        //this.library.queue.push([nextTrack, nextIndex]);
     }
 
     getNextTrack(playing, playingIndex) {
-        let t = playing,
+        /*let t = playing,
             k = playing,
             n = playingIndex,
             j = playingIndex;
@@ -187,19 +232,23 @@ export default class PlayerUI {
         } else if (this.mode == 'one') {
             // do nothing
         }
-        return [k, n];
+        return [k, n];*/
+        return this.library.scope2.nextTrack;
     }
 
     prepareNextTrack() {
         let temp;
-        let [nextTrack, nextIndex] =
-            this.library.queue.length > 0
+        let nextTrack = this.library.scope2.nextTrack;
+            /*this.library.queue.length > 0
                 ? this.library.queue[0].length
                     ? [this.library.queue[0], null]
                     : this.library.queue[0]
-                : ((temp = this.getNextTrack(k, n)),
+                : ((temp = this.getNextTrack(
+                      this.library.playing,
+                      this.library.playingIndex
+                  )),
                   this.library.queue.push(temp),
-                  temp);
+                  temp);*/
         if (isOutdated(nextTrack)) {
             this.library.refetch(nextTrack.album);
         }
@@ -211,7 +260,7 @@ export default class PlayerUI {
         } else {
             if (this.library.prev.length > 0) {
                 let p, n;
-                let h = this.library.queue.shift();
+                let h = this.library.prev.shift();
                 if (h.length) {
                     p = h[0];
                     n = h[1];
@@ -223,6 +272,14 @@ export default class PlayerUI {
                 this.library.queue.unshift([p, n]);
             }
         }
+    }
+
+    forwards() {
+        this.audio.currentTime += 5;
+    }
+
+    back() {
+        this.audio.currentTime -= 5;
     }
 
     refresh() {}

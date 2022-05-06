@@ -26,7 +26,7 @@ export default class PlaylistView {
             });*/
             createTrackDiv(
                 this.div,
-                `${i.rawArtist} - ${i.title}`,
+                `${i.rawArtistString} - ${i.title}`,
                 i,
                 this.library,
                 j,

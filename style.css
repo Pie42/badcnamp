@@ -79,10 +79,12 @@ body > div {
     border-radius: 8px;
     transition-duration: 0.25s;
     cursor: pointer;
+    max-height: 22;
 }
 
 .track-div.fancy {
     padding: 16px;
+    max-height: none;
 }
 
 .track-div:hover {
@@ -111,4 +113,23 @@ body > div {
 
 .browse-tab {
     display: inline;
+}
+
+.player-control {
+    display: inline;
+    font-size: 50px;
+}
+
+.track-p {
+    vertical-align: middle;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    line-height: 24px;
+}
+
+.fancy-track-p {
+    vertical-align: middle;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    line-height: 22px;
 }

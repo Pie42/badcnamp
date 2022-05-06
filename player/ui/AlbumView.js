@@ -48,7 +48,7 @@ export default class AlbumView {
             let i = this.tracks[j];
             createTrackDiv(
                 this.div,
-                `${i.rawArtist} - ${i.title}`,
+                `${i.rawArtistString} - ${i.title}`,
                 i,
                 this.library,
                 j,

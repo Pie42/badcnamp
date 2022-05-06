@@ -17,10 +17,12 @@ export default class AlbumMenu extends Menu {
 
     append() {
         this.library.queue.push(...this.context.tracks);
+        this.library.scope2.addToQueue(this.context.tracks);
     }
 
     prepend() {
         this.library.queue.unshift(...this.context.tracks);
+        this.library.scope2.playNext(this.context.tracks);
     }
 
     addToPlaylist(playlist) {

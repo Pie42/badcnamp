@@ -55,7 +55,7 @@ export default class ScrobbleUI {
     loadedmetadata() {
         let playing = this.player.library.playing;
         this.title.innerHTML = playing.title;
-        this.artist.innerHTML = playing.rawArtist;
+        this.artist.innerHTML = playing.rawArtistString;
         this.album.setAttribute('title', playing.album.title);
         this.duration.innerHTML = this.tformat(
             this.player.audio.duration,

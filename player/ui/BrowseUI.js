@@ -10,6 +10,10 @@ import PlaylistsView from './PlaylistsView.js';
 import PlaylistView from './PlaylistView.js';
 import TrackMenu from './menu/TrackMenu.js';
 import AlbumMenu from './menu/AlbumMenu.js';
+import SearchView from './SearchView.js';
+import Timer from '../Timer.js';
+import TagsView from './TagsView.js';
+import TagView from './TagView.js';
 
 export default class BrowseUI {
     constructor(library) {
@@ -30,6 +34,9 @@ export default class BrowseUI {
             artists: ArtistsView,
             playlist: PlaylistView,
             playlists: PlaylistsView,
+            search: SearchView,
+            tag: TagView,
+            tags: TagsView,
             tracks: TracksView,
         };
         this.ui = undefined;
@@ -40,6 +47,11 @@ export default class BrowseUI {
         this.scrollTop = 0;
         this.trackMenu = new TrackMenu(this.library, this);
         this.albumMenu = new AlbumMenu(this.library, this);
+
+        this.delay = 0;
+        this.searchInterval = 500;
+
+        this.sort = 'title';
     }
 
     create(data, first = true) {
@@ -53,7 +65,9 @@ export default class BrowseUI {
             }
             delete this.ui;
             this.ui = new this.views[this.uiview](this, data);
-            this.div.replaceChildren(this.ui.div);
+            this.div.innerHTML = '';
+            this.div.appendChild(this.ui.div);
+            //this.div.replaceChildren(this.ui.div);
             this.createTabs();
             this.createInput();
             //this.scroll();
@@ -61,6 +75,12 @@ export default class BrowseUI {
     }
 
     switchUI(newUI, data = null, add = true) {
+        let t = Timer.start('UI switch to ' + newUI);
+        let state = history.state;
+        if (state) {
+            state.scroll = this.div.scrollTop;
+            history.replaceState(state, '');
+        }
         if (add) {
             this.addToHistory(newUI, data);
         }
@@ -70,26 +90,60 @@ export default class BrowseUI {
         this.create(data, false);
         this.trackMenu.switch();
         this.albumMenu.switch();
+        Timer.stop(t);
         return;
     }
 
     createTabs() {
         let tabs = document.createElement('div');
-        createP(tabs, '< Back', () => {
-            this.back();
-        }, ['browse-tab']);
-        createP(tabs, 'Artists', () => {
-            this.switchUI('artists');
-        }, ['browse-tab']);
-        createP(tabs, 'Albums', () => {
-            this.switchUI('albums');
-        }, ['browse-tab']);
-        createP(tabs, 'Tracks', () => {
-            this.switchUI('tracks');
-        }, ['browse-tab']);
-        createP(tabs, 'Playlists', () => {
-            this.switchUI('playlists');
-        }, ['browse-tab']);
+        createP(
+            tabs,
+            '< Back',
+            () => {
+                this.back();
+            },
+            ['browse-tab']
+        );
+        createP(
+            tabs,
+            'Artists',
+            () => {
+                this.switchUI('artists');
+            },
+            ['browse-tab']
+        );
+        createP(
+            tabs,
+            'Albums',
+            () => {
+                this.switchUI('albums');
+            },
+            ['browse-tab']
+        );
+        createP(
+            tabs,
+            'Tracks',
+            () => {
+                this.switchUI('tracks');
+            },
+            ['browse-tab']
+        );
+        createP(
+            tabs,
+            'Tags',
+            () => {
+                this.switchUI('tags');
+            },
+            ['browse-tab']
+        );
+        createP(
+            tabs,
+            'Playlists',
+            () => {
+                this.switchUI('playlists');
+            },
+            ['browse-tab']
+        );
         this.div.insertBefore(tabs, this.div.children[0]);
     }
 
@@ -97,13 +151,15 @@ export default class BrowseUI {
         let inputDiv = document.createElement('div'),
             input = document.createElement('input'),
             addButton = document.createElement('button'),
-            profileSelect = document.createElement('select');
+            profileSelect = document.createElement('select'),
+            search = document.createElement('input');
         input.addEventListener('keydown', (e) => {
             if (e.key == 'Enter') {
                 this.library.add(input.value);
                 input.value = '';
             }
         });
+        input.placeholder = 'Paste an album link here...';
         addButton.onclick = () => {
             this.library.add(input.value);
             input.value = '';
@@ -142,9 +198,39 @@ export default class BrowseUI {
             }
             //profileSelect.multiple
         };
+
+        search.addEventListener('keyup', async () => {
+            if (search.value != '') {
+                if (this.uiview != 'search') {
+                    let value = search.value;
+                    await this.switchUI('search');
+                    search = this.div.children[0].children[3];
+                    search.value = value;
+                    search.focus();
+                }
+                //this.delay = performance.now();
+                if (performance.now() - this.delay > this.searchInterval) {
+                    this.delay = performance.now();
+                    this.ui.search(search.value);
+                    this.ui.update();
+                } else {
+                    setTimeout(() => {
+                        if (
+                            performance.now() - this.delay >
+                            this.searchInterval
+                        ) {
+                            this.delay = performance.now();
+                            this.ui.search(search.value);
+                            this.ui.update();
+                        }
+                    }, 500);
+                }
+            }
+        });
         inputDiv.appendChild(input);
         inputDiv.appendChild(addButton);
         inputDiv.appendChild(profileSelect);
+        inputDiv.appendChild(search);
         this.div.insertBefore(inputDiv, this.div.children[0]);
         input.focus();
     }
@@ -196,6 +282,7 @@ export default class BrowseUI {
             case 'tracks':
             case 'artists':
             case 'playlists':
+            case 'tags':
                 document.title = type;
                 await this.switchUI(type, null, false);
                 break;
@@ -212,6 +299,14 @@ export default class BrowseUI {
                 let playlist = this.library.playlists[id];
                 document.title = playlist.name;
                 await this.switchUI(type, playlist, false);
+                break;
+            case 'search':
+                document.title = 'Search';
+                await this.switchUI('search', id, false);
+                break;
+            case 'tag':
+                document.title = id;
+                await this.switchUI('tag', id, false);
                 break;
             default:
                 await this.switchUI('albums');
@@ -237,6 +332,11 @@ export default class BrowseUI {
                 break;
             case 'artist':
                 document.title = this.library.artists[data].rawName;
+                state.id = data;
+                search += `,${data}`;
+                break;
+            case 'tag':
+                document.title = data;
                 state.id = data;
                 search += `,${data}`;
                 break;

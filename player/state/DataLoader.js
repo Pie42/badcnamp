@@ -1,8 +1,10 @@
-import { namespace } from "../constants/PlayerConstants.js";
+import settings from "../constants/PlayerConstants.js";
 
+// TODO: probably eventually switch this to IndexedDB or something other than localStorage
+// (should be pretty easy, since i can just keep all of the methods the same and change the internals)
 export default class DataLoader {
     static init() {
-        this.namespace = namespace + '-';
+        this.namespace = settings.namespace + '-';
         window.DataLoader = DataLoader;
         return;
     }

@@ -1,3 +1,4 @@
+import { sortArray } from '../Util.js';
 import { createTrackDiv } from '../Util.js';
 import { createLongP, createP } from '../Util.js';
 
@@ -18,9 +19,10 @@ export default class ArtistView {
         albumHeader.innerHTML = 'Albums';
         this.div.appendChild(albumHeader);
 
-        let albums = this.albums.sort(
+        /*let albums = this.albums.sort(
             (a, b) => (a.title.toLowerCase() > b.title.toLowerCase()) * 2 - 1
-        );
+        );*/
+        let albums = sortArray(this.albums, 'title');
         for (let i of albums) {
             let albumDiv = document.createElement('div'),
                 albumTitle = createLongP(
@@ -49,9 +51,10 @@ export default class ArtistView {
             this.div.appendChild(albumDiv);
         }
 
-        let tracks = this.tracks.sort(
+        /*let tracks = this.tracks.sort(
             (a, b) => (a.title.toLowerCase() > b.title.toLowerCase()) * 2 - 1
-        );
+        );*/
+        let tracks = sortArray(this.tracks, 'title');
         let trackHeader = document.createElement('h4');
         trackHeader.innerHTML = 'Tracks';
         this.div.appendChild(trackHeader);

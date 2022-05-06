@@ -1,5 +1,4 @@
-import { createP, createLongP } from '../Util.js';
-//import Menu from "./Menu.js";
+import { createP, createLongP, sortArray } from '../Util.js';
 
 export default class ArtistsView {
     constructor(manager, data) {
@@ -11,13 +10,15 @@ export default class ArtistsView {
         this.div = document.createElement('div');
         let artists = this.artists;
         if (data?.sort == 'length') {
-            artists = Object.entries(artists)
+            /*artists = Object.entries(artists)
                 .sort((a, b) => b[1].tracks.length - a[1].tracks.length)
-                .map((i) => i[0]);
+                .map((i) => i[0]);*/
+            artists = sortArray(Object.entries(artists), 'custom', '[1].tracks.length');
         } else {
-            artists = Object.keys(artists).sort((a, b) => {
+            /*artists = Object.keys(artists).sort((a, b) => {
                 return (b.toLocaleLowerCase() < a.toLocaleLowerCase()) * 2 - 1;
-            });
+            });*/
+            artists = sortArray(Object.keys(artist), 'string');
         }
         for (let i of artists) {
             let artistDiv = document.createElement('div'),
