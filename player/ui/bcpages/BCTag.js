@@ -12,17 +12,11 @@ export default class BCTag {
     constructor(manager, tag) {
         this.manager = manager;
         this.div = document.createElement('div');
-        //this.cache = {};
         this.tag = tag
             .replaceAll(' ', '-')
             .replaceAll(/[^a-zA-Z\-]/g, '')
             .replaceAll(/-+/g, '-');
         this.rawTag = tag;
-        /*FetchManager.fetch(
-            `https://bandcamp.com/tag/${tag}`,
-            this.parse,
-            this.populate.bind(this)
-        );*/
         this.switch(this.tag);
     }
 
@@ -57,21 +51,15 @@ export default class BCTag {
             data.dig_deeper = fullData.hub.tabs[0].dig_deeper;
         }
         data.subgenres = fullData.hub.subgenres;
-        //console.log(fullData);
         return data;
     }
 
     populate(response) {
         window.data = response;
         this.albums = { collections: [], digDeeper: [] };
-        //this.cache[this.tag] = response;
         let tabs = document.createElement('div');
 
         let collections = document.createElement('div'),
-            //newReleases = document.createElement('div'),
-            //newReleasesAlbums = document.createElement('div'),
-            //bestSellers = document.createElement('div'),
-            //bestSellersAlbums = document.createElement('div'),
             digDeeper = document.createElement('div'),
             digDeeperAlbums = document.createElement('div'),
             related = document.createElement('div'),
@@ -79,12 +67,6 @@ export default class BCTag {
 
         title.innerHTML = this.rawTag;
         this.div.appendChild(title);
-
-        //collections.appendChild(newReleases);
-        //collections.appendChild(bestSellers);
-
-        //new UIHeader(newReleases, 'New Releases', 'h4');
-        //new UIHeader(bestSellers, 'Best Sellers', 'h4');
         if (response.collections) {
             digDeeper.style.display = 'none';
             response.collections = response.collections.filter(
@@ -126,15 +108,6 @@ export default class BCTag {
             );
         }
 
-        /*for (let i of response.collections[1].items) {
-            let j = new RemoteAlbum(i);
-            this.albums.collections[1].push(j);
-            bestSellersAlbums.appendChild(
-                new UIRemoteAlbum(j, this.manager).div
-            );
-        }
-        bestSellers.appendChild(bestSellersAlbums);*/
-
         if (response.dig_deeper) {
             for (let i of response.dig_deeper.results[
                 response.dig_deeper.initial_settings
@@ -158,8 +131,6 @@ export default class BCTag {
         );
         relatedSection.div.firstChild.innerHTML = 'Related Tags';
 
-        //newReleasesAlbums.classList.add('carousel');
-        //bestSellersAlbums.classList.add('carousel');
         this.div.appendChild(tabs);
         this.div.appendChild(collections);
         this.div.appendChild(digDeeper);

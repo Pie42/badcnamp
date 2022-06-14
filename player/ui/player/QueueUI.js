@@ -35,23 +35,6 @@ export default class QueueUI {
         this.queueDiv.innerHTML = '';
         this.items = [];
         let index = this.scope.index;
-
-        /*for (let i in this.queue) {
-            i = +i;
-            let track = this.queue[i],
-                element = new UIQueueItem(
-                    this.queueDiv,
-                    track,
-                    i == index ? 1 : i < index ? 0 : 2,
-                    () => {
-                        this.library.play(track);
-                        this.scope.index = i;
-                        this.scope.save();
-                        this.scope.updateIndex();
-                    }
-                );
-            this.items.push(element);
-        }*/
         rateLimit((i) => {
             let track = this.queue[i],
                 element = new UIQueueItem(
@@ -70,9 +53,6 @@ export default class QueueUI {
             this.index = index;
             this.current = this.items[this.index];
         });
-
-        //this.index = index;
-        //this.current = this.items[this.index];
     }
 
     queuechange() {

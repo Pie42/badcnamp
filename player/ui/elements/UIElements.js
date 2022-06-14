@@ -30,7 +30,6 @@ class UIAlbum {
             border: solid;
             border-width: 1px;
             border-radius: 2px;
-            /*padding: 8px;*/
             margin: 2px;
             display: flex;
             overflow: hidden;
@@ -103,12 +102,6 @@ class UIRemoteAlbum {
         background: #000;
         border-radius: 100%;
         text-align: center;`;
-        /*this.menu.style.bottom = '1050%';
-        this.menu.style.right = '5%';
-        this.menu.style.position = 'absolute';
-        this.menu.style.display = 'block';
-        this.menu.style.width = '10%';
-        this.menu.style.background = 'rgba(0, 0, 0, 0.9)';*/
         this.menuButton = createP(this.menu, '\u22ee', () => {
             manager.remoteAlbumMenu.switch(this.menu, album);
         });

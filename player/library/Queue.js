@@ -115,8 +115,6 @@ export default class Queue {
             track;
         if (this.upNext.length) {
             track = this.upNext[this.upNext.length - 1];
-            /*tempPointer =
-                (this.scope.indexOf(track) + 1 || tempPointer + 1) - 1;*/
             tempPointer = this.pointer;
         } else {
             switch (this.mode) {

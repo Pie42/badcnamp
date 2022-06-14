@@ -170,7 +170,6 @@ export default class BrowseUI {
                     search.value = value;
                     search.focus();
                 }
-                //this.delay = performance.now();
                 if (performance.now() - this.delay > this.searchInterval) {
                     this.delay = performance.now();
                     this.ui.search(search.value);
@@ -199,9 +198,6 @@ export default class BrowseUI {
 
     createTabs() {
         let tabs = document.createElement('div');
-        /*tabs.style = `display: table;
-        width: 100%;
-        table-layout: fixed;`;*/
         tabs.classList.add('tab-group');
         for (let i of ['Artists', 'Albums', 'Tracks', 'Tags', 'Playlists']) {
             new UITab(
@@ -217,10 +213,6 @@ export default class BrowseUI {
     }
 
     selectTab(type) {
-        /*if (this.selectedTab) {
-            this.selectedTab.classList.remove('selected');
-            this.selectedTab = undefined;
-        }*/
         this.selectedTab = undefined;
         let index;
         if ((index = this.tabs.indexOf(type)) > -1) {

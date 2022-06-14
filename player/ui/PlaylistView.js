@@ -8,11 +8,6 @@ export default class PlaylistView {
         this.playlist = data;
         this.tracks = this.playlist.tracks;
         this.div = document.createElement('div');
-        /*this.cover = document.createElement('img');
-        this.cover.style.width = '40%';
-        this.cover.style.height = this.cover.style.width;
-        this.cover.src =
-            this.playlist.image || this.tracks?.[0]?.album?.image || '';*/
         this.cover = this.playlist.canvas;
         this.cover.style.width = '40%';
         this.div.appendChild(this.cover);
@@ -23,9 +18,6 @@ export default class PlaylistView {
 
         for (let j in this.tracks) {
             let i = this.tracks[j];
-            /*createLongP(this.div, `${i.rawArtist} - ${i.title}`, () => {
-                this.library.play(i, +j, this.tracks);
-            });*/
             createTrackDiv(
                 this.div,
                 `${i.rawArtistString} - ${i.title}`,
@@ -35,7 +27,5 @@ export default class PlaylistView {
                 this.tracks
             );
         }
-        //this.playlist = playlist;
-        //this.tracks = playlist.tracks;
     }
 }

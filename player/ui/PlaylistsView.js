@@ -29,7 +29,6 @@ export default class PlaylistsView {
             border: solid;
             border-width: 1px;
             border-radius: 2px;
-            /*padding: 8px;*/
             margin: 2px;
             display: flex;
             overflow: hidden;

@@ -24,41 +24,20 @@ export default class PiPUI {
         this.titleWidth = 0;
         this.artistWidth = 0;
 
-        /**
-         * @type {MediaStream}
-         */
-        /*this.stream = this.canvas.captureStream(2);
-        this.video.srcObject = this.stream;*/
-
         this.div.appendChild(this.canvas);
         this.div.appendChild(this.video);
 
         this.events = ['timeupdate', 'loadedmetadata', 'pause'];
-        //this.events = ['loadedmetadata'];
         this.playing = undefined;
-        //this.lastCalled = 0;
-        //requestAnimationFrame(this.timeupdate.bind(this));
     }
 
     timeupdate() {
-        //if (t - this.lastCalled > 0) {
         if (this.playing) {
-            //this.lastCalled = performance.now();
-            //this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            //this.ctx.drawImage(this.player.cover, 50, 50, 400, 400);
             this.ctx.drawImage(this.player.cover, 0, 0, this.size, this.size);
             this.drawInfo(this.player.audio.currentTime);
-            //requestAnimationFrame(() => {});
-            //this.canvasStream = this.stream.getTracks()[0];
-            //this.video.srcObject = this.stream;
-            //this.stream.requestFrame();
-            //this.canvasStream.requestFrame();
         } else {
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            //this.canvasStream.requestFrame();
         }
-        //}
-        //requestAnimationFrame(this.timeupdate.bind(this));
     }
 
     drawInfo(t) {
@@ -66,22 +45,18 @@ export default class PiPUI {
         this.ctx.fillRect(0, 350, this.size, 150);
         this.ctx.fillStyle = '#fff';
         this.ctx.textBaseline = 'top';
-        //let t = this.player.audio.currentTime;
         this.ctx.font = '60px sans-serif';
-        //this.ctx.fillText(this.playing.title, 0, 355, 500);
         this.ctx.fillText(
             this.playing.title,
             this.scrollFunction(t, this.titleWidth),
             355
         );
         this.ctx.font = '45px sans-serif';
-        //this.ctx.fillText(this.playing.rawArtistString, 0, 430, 500);
         this.ctx.fillText(
             this.playing.rawArtistString,
             this.scrollFunction(t, this.artistWidth),
             415
         );
-        //this.ctx.fillText(this.playing.rawArtistString,)
         this.ctx.fillStyle = '#8ca195';
         this.ctx.fillRect(
             0,
@@ -99,23 +74,17 @@ export default class PiPUI {
         let length = size / 50,
             newT = t % (length - 5);
         return Math.max(Math.min(3 - newT, 0), 10 - length) * 50;
-        //return Math.max(Math.min(-newT, 0), -length) * 50;
-        //return newT * -50;
     }
 
     loadedmetadata() {
         this.playing = this.player.library.playing;
-        //let ctx = this.canvas2.getContext('2d');
-        //ctx.drawImage(this.player.cover, 0, 0, 500, 500);
         this.ctx.font = '60px sans-serif';
         this.titleWidth = this.ctx.measureText(this.playing.title).width;
         this.ctx.font = '45px sans-serif';
         this.artistWidth = this.ctx.measureText(
             this.playing.rawArtistString
         ).width;
-        //this.timeupdate();
         this.pause();
-        //this.imgdata = ctx.getImageData(0, 0, 500, 500);
     }
 
     pause() {

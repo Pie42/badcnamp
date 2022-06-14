@@ -1,10 +1,3 @@
-/*export default class Album {
-    constructor(title, artist) {
-        this.title = title;
-        this.artist = artist;
-    }
-}*/
-
 import { createP, createLongP, createTrackDiv } from '../Util.js';
 import { UITagSection } from './elements/UIElements.js';
 
@@ -21,14 +14,11 @@ export default class AlbumView {
         this.cover.style.width = '40%';
         this.cover.style.height = this.cover.style.width;
         this.cover.src = this.album.image;
-        //this.div.appendChild(this.cover);
 
         let albumLink = document.createElement('a');
         albumLink.href = this.album.link;
-        //albumLink.innerHTML = 'Link';
         albumLink.appendChild(this.cover);
         this.div.appendChild(albumLink);
-        //this.cover.onclick = albumLink.click;
 
         let title = document.createElement('h1');
         title.innerHTML = this.album.title;
@@ -61,8 +51,6 @@ export default class AlbumView {
         createP(this.div, 'reset', () => {
             this.library.fix(this.album);
         });
-        //this.album = album;
-        //this.tracks = album.tracks;
 
         new UITagSection(this.div, this.tags, manager);
     }

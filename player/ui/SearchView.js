@@ -4,7 +4,6 @@ export default class SearchView {
     constructor(manager, data) {
         this.manager = manager;
         this.library = this.manager.library;
-        //this.searchString = data;
         this.tracks = [];
         this.albums = [];
         this.artists = [];
@@ -32,9 +31,9 @@ export default class SearchView {
         this.artists = Object.keys(this.library.artists).filter((i) =>
             i.match(match)
         );
-        let _albums = [...this.albums],
+        /*let _albums = [...this.albums],
             _artists = [...this.artists];
-        /*for (let i of this.tracks) {
+        for (let i of this.tracks) {
             this.albums.push(i.album);
         }
         for (let i of _albums) {
@@ -130,7 +129,6 @@ export default class SearchView {
             border: solid;
             border-width: 1px;
             border-radius: 2px;
-            /*padding: 8px;*/
             margin: 2px;
             display: flex;
             overflow: hidden;
@@ -165,7 +163,6 @@ export default class SearchView {
     border: solid;
     border-width: 1px;
     border-radius: 2px;
-    /*padding: 8px;*/
     margin: 2px;
     display: flex;
     overflow: hidden;

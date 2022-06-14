@@ -92,13 +92,9 @@ export default class LibraryManager {
 
     async play(track, index, scope) {
         this.playing = track;
-        //this.playingIndex = index ?? this.playingIndex;
-        //this.scope = scope || this.scope || this.tracks;
         if (scope) {
             this.scope2.update(scope, index);
         }
-        //this.scope2.pointer = index ?? this.scope2.pointer;
-        //this.scope2.pointer = +this.scope2.pointer;
         this.scope2.updateTitle();
         if (isOutdated(track)) {
             await this.refetch(track.album);
@@ -327,8 +323,6 @@ Are you still sure you want to add it?`)
         this.removeAlbum(album);
         await this.add(album.link);
         this.albums.splice(index, 0, this.albums.pop());
-        //this.uimanager.refresh();
-        //this.uimanager.back();
         if (switchViews) {
             await this.uimanager.browseui.switchUI('album', this.albums[index]);
             this.uimanager.browseui.history.pop();

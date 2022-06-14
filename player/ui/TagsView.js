@@ -12,14 +12,8 @@ export default class TagsView {
         let tags = Object.entries(this.tags);
         tags = tags.filter((i) => i[1].albums.length > 1);
         if (data?.sort == 'length') {
-            /*tags = Object.entries(tags)
-                .sort((a, b) => b[1].tracks.length - a[1].tracks.length)
-                .map((i) => i[0]);*/
             tags = sortArray(tags, '[1].tracks.length * -1');
         } else {
-            /*tags = Object.keys(tags).sort((a, b) => {
-                return (b.toLocaleLowerCase() < a.toLocaleLowerCase()) * 2 - 1;
-            });*/
             tags = sortArray(tags, '[0].toLocaleLowerCase()');
         }
         for (let i of tags) {
@@ -38,7 +32,6 @@ export default class TagsView {
             border: solid;
             border-width: 1px;
             border-radius: 2px;
-            /*padding: 8px;*/
             margin: 2px;
             display: flex;
             overflow: hidden;

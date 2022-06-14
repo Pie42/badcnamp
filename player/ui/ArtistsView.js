@@ -2,22 +2,14 @@ import { createP, createLongP, sortArray } from '../Util.js';
 
 export default class ArtistsView {
     constructor(manager, data) {
-        //this.menu = manager.menu;
-        //this.menu = new Menu();
         this.library = manager.library;
         this.artists = this.library.artists;
         this.data = data;
         this.div = document.createElement('div');
         let artists = this.artists;
         if (data?.sort == 'length') {
-            /*artists = Object.entries(artists)
-                .sort((a, b) => b[1].tracks.length - a[1].tracks.length)
-                .map((i) => i[0]);*/
             artists = sortArray(Object.entries(artists), '[1].tracks.length');
         } else {
-            /*artists = Object.keys(artists).sort((a, b) => {
-                return (b.toLocaleLowerCase() < a.toLocaleLowerCase()) * 2 - 1;
-            });*/
             artists = sortArray(Object.keys(artists), 'string');
         }
         for (let i of artists) {
@@ -39,7 +31,6 @@ export default class ArtistsView {
             border: solid;
             border-width: 1px;
             border-radius: 2px;
-            /*padding: 8px;*/
             margin: 2px;
             display: flex;
             overflow: hidden;

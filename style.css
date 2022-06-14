@@ -6,7 +6,6 @@
 p.pointer-hover {
     margin-block-end: 0px;
     margin-block-start: 0px;
-    /* width: fit-content; */
 }
 
 p.pointer-hover:hover {
@@ -70,7 +69,6 @@ p.tab-selected {
 }
 
 body>div {
-    /*display: inline-block;*/
     position: fixed;
     top: 0;
     overflow: scroll;
@@ -121,10 +119,8 @@ body>div {
     text-align: center;
     background: rgba(255, 255, 255, 0.1);
     padding-inline: 1px;
-    /* padding-block: 8px; */
     background-clip: content-box;
     line-height: 1.5em;
-    /* border-radius: 40px; */
 }
 
 .player-control {
@@ -168,7 +164,6 @@ body>div {
 
 .large-album {
     width: 33%;
-    /* height: 33%; */
     display: inline;
 }
 
@@ -242,10 +237,6 @@ div.queue-item.past {
     filter: brightness(0.4);
 }
 
-/*div.queue-item:not(.past):not(.current) {
-    filter: brightness(0.8);
-}*/
-
 div.queue-item.current {
     background: rgba(255, 255, 255, 0.1);
 }
@@ -254,10 +245,3 @@ div.queue {
     overflow-y: scroll;
     height: calc(100% - 19px);
 }
-
-/*.queue-back {
-    position: sticky;
-    top: 0;
-    background: var(--bg-color);
-    z-index: 2;
-}*/

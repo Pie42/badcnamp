@@ -24,15 +24,7 @@ export default class TagView {
         let artists = sortArray(Object.keys(this.artists), 'string'),
             artistsAccordion = accordion(`Artists (${artists.length})`),
             artistsDiv = artistsAccordion.children[1];
-            /*artistsDiv = document.createElement('div'),
-            artistsHeader = document.createElement('h4');
-        artistsHeader.innerHTML = `Artists (${artists.length})`;
-        artistsDiv.appendChild(artistsHeader);*/
         this.div.appendChild(artistsAccordion);
-
-        /*let artists = Object.keys(this.artists).sort(
-            (a, b) => (a.toLocaleLowerCase() > b.toLocaleLowerCase()) * 2 - 1
-        );*/
 
         rateLimit((j) => {
             let i = artists[j],
@@ -63,18 +55,10 @@ export default class TagView {
         }, artists.length);
 
         let albums = sortArray(this.albums, 'title'),
-            /*albumsDiv = document.createElement('div'),
-            albumsHeader = document.createElement('h4');
-        albumsHeader.innerHTML = `Albums (${albums.length})`;
-        albumsDiv.appendChild(albumsHeader);*/
             albumsAccordion = accordion(`Albums (${albums.length})`),
             albumsDiv = albumsAccordion.children[1];
         this.div.appendChild(albumsAccordion);
 
-        /*let albums = this.albums.sort(
-            (a, b) => (a.title.toLowerCase() > b.title.toLowerCase()) * 2 - 1
-        );*/
-        //for (let i of albums) {
         rateLimit((j) => {
             let i = albums[j],
                 albumDiv = document.createElement('div'),
@@ -102,23 +86,11 @@ export default class TagView {
             text-overflow: ellipsis;`;
             albumsDiv.appendChild(albumDiv);
         }, albums.length);
-        //}
 
-        /*let tracks = this.tracks.sort(
-            (a, b) => (a.title.toLowerCase() > b.title.toLowerCase()) * 2 - 1
-        );*/
         let tracks = sortArray(this.tracks, 'title'),
-            /*tracksDiv = document.createElement('div'),
-            tracksHeader = document.createElement('h4');
-        tracksHeader.innerHTML = `Tracks (${tracks.length})`;
-        tracksDiv.appendChild(tracksHeader);*/
             tracksAccordion = accordion(`Tracks (${tracks.length})`),
             tracksDiv = tracksAccordion.children[1];
         this.div.appendChild(tracksAccordion);
-        //for (let j in tracks) {
-        /*createLongP(this.div, i.title, () => {
-                this.library.play(i, tracks);
-            });*/
         rateLimit((j) => {
             let i = tracks[j];
             createTrackDiv(
@@ -130,6 +102,5 @@ export default class TagView {
                 tracks
             );
         }, tracks.length);
-        //}
     }
 }
