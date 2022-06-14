@@ -1,13 +1,19 @@
+import DataLoader from '../state/DataLoader.js';
+
 export default class FixedQueue {
     constructor(library) {
         this.library = library;
         this.queue = [];
         this.index = 0;
+
         // this is named a bit weirdly, but it tracks the end of the tracks that have been put
-        // in not from the original scope in order to make add to queue behave in a sensible way
+        // in not from the original scope in order to make 'add to queue' behave in a sensible way.
+
+        // not implemented.
         this.queueEnd = 0;
 
         this.mode = 'shuffle';
+        this.repeat = 'all';
     }
 
     shuffle(startingIndex) {
@@ -36,10 +42,12 @@ export default class FixedQueue {
             let j = (Math.random() * (this.queue.length - this.index)) | 0;
             this.queue.splice(j + this.index + 1, 0, i);
         }
+        this.save();
+        this.updateQueue();
     }
 
     update(queue, index) {
-        this.queue = queue;
+        this.queue = [...queue];
         switch (this.mode) {
             case 'shuffle':
                 this.shuffle(index);
@@ -50,6 +58,8 @@ export default class FixedQueue {
                 break;
         }
         this.queueEnd = this.index;
+        this.save();
+        this.updateQueue();
     }
 
     get playing() {
@@ -68,23 +78,37 @@ export default class FixedQueue {
 
     playNext(tracks) {
         this.queue.splice(this.index + 1, 0, ...tracks);
-        this.queueEnd++;
+        this.queueEnd += tracks.length;
+        this.save();
+        this.updateQueue();
     }
 
     addToQueue(tracks) {
         this.queue.splice(this.queueEnd + 1, 0, ...tracks);
         this.queueEnd += tracks.length;
+        this.save();
+        this.updateQueue();
     }
 
     loop() {
         switch (this.mode) {
             case 'shuffle':
                 this.shuffle();
+                this.updateQueue();
                 break;
 
             default:
                 this.index = 0;
                 break;
+        }
+        this.updateIndex();
+    }
+
+    trackFinish() {
+        if (this.repeat == 'all') {
+            return this.next();
+        } else {
+            return this.playing;
         }
     }
 
@@ -96,6 +120,9 @@ export default class FixedQueue {
         if (this.index == this.queue.length) {
             this.loop();
         }
+        this.save();
+        this.updateTitle();
+        this.updateIndex();
         return this.playing;
     }
 
@@ -106,6 +133,41 @@ export default class FixedQueue {
             }
             this.index--;
         }
+        this.save();
+        this.updateTitle();
+        this.updateIndex();
         return this.playing;
+    }
+
+    save() {
+        let queue = this.queue.map((i) => [i.album.id, i.id]);
+        DataLoader.set('queue', queue);
+        DataLoader.setRaw('index', this.index);
+    }
+
+    load() {
+        let queue = DataLoader.get('queue');
+        if (queue) {
+            this.queue = queue.map(
+                (i) => this.library.albums[i[0]].tracks[i[1]]
+            );
+            this.index = +DataLoader.getRaw('index');
+            return true;
+        }
+        return false;
+    }
+
+    updateTitle() {
+        document.title = `${this.library.playing.title} / ${this.library.playing.rawArtistString}`;
+    }
+
+    updateIndex() {
+        let event = new CustomEvent('indexchange');
+        document.dispatchEvent(event);
+    }
+
+    updateQueue() {
+        let event = new CustomEvent('queuechange');
+        document.dispatchEvent(event);
     }
 }

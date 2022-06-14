@@ -25,6 +25,7 @@ export default class TrackMenu extends Menu {
 
     addToPlaylist(playlist) {
         playlist.tracks.push(this.context);
+        playlist.dirty();
     }
 
     goToAlbum() {

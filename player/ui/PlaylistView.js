@@ -8,11 +8,13 @@ export default class PlaylistView {
         this.playlist = data;
         this.tracks = this.playlist.tracks;
         this.div = document.createElement('div');
-        this.cover = document.createElement('img');
+        /*this.cover = document.createElement('img');
         this.cover.style.width = '40%';
         this.cover.style.height = this.cover.style.width;
         this.cover.src =
-            this.playlist.image || this.tracks?.[0]?.album?.image || '';
+            this.playlist.image || this.tracks?.[0]?.album?.image || '';*/
+        this.cover = this.playlist.canvas;
+        this.cover.style.width = '40%';
         this.div.appendChild(this.cover);
 
         let name = document.createElement('h1');

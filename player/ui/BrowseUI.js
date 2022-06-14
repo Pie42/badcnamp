@@ -1,11 +1,11 @@
 import DataLoader from '../state/DataLoader.js';
 import AlbumView from './AlbumView.js';
 import AlbumsView from './AlbumsView.js';
-//import Menu from './Menu.js';
-import { createP } from '../Util.js';
+import { createP, getLinkType } from '../Util.js';
 import TracksView from './TracksView.js';
 import ArtistsView from './ArtistsView.js';
 import ArtistView from './ArtistView.js';
+import BCTag from './bcpages/BCTag.js';
 import PlaylistsView from './PlaylistsView.js';
 import PlaylistView from './PlaylistView.js';
 import TrackMenu from './menu/TrackMenu.js';
@@ -14,6 +14,8 @@ import SearchView from './SearchView.js';
 import Timer from '../Timer.js';
 import TagsView from './TagsView.js';
 import TagView from './TagView.js';
+import { UITab } from './elements/UIElements.js';
+import RemoteAlbumMenu from './menu/RemoteAlbumMenu.js';
 
 export default class BrowseUI {
     constructor(library) {
@@ -23,15 +25,13 @@ export default class BrowseUI {
         this.div.style.height = '100%';
         this.div.style.borderRight = 'solid #0f0c0c';
         this.div.style.borderWidth = '1px';
-        //this.menu = new Menu();
-        //this.uiview = DataLoader.getRaw('uiview') || 'albums';
-        //this.uiview = 'albums';
         this.uiview = undefined;
         this.views = {
             album: AlbumView,
             albums: AlbumsView,
             artist: ArtistView,
             artists: ArtistsView,
+            bctag: BCTag,
             playlist: PlaylistView,
             playlists: PlaylistsView,
             search: SearchView,
@@ -39,25 +39,32 @@ export default class BrowseUI {
             tags: TagsView,
             tracks: TracksView,
         };
+        this.tabs = ['artists', 'albums', 'tracks', 'tags', 'playlists'];
         this.ui = undefined;
-        //this.history = [['albums', null, 0]];
         this.history = [];
-        //let search = window.location.search.replace('?', '').split(',');
-        //this.switchFromHistory(search[0], search?.[1]);
         this.scrollTop = 0;
         this.trackMenu = new TrackMenu(this.library, this);
         this.albumMenu = new AlbumMenu(this.library, this);
+        this.remoteAlbumMenu = new RemoteAlbumMenu(this.library, this);
 
         this.delay = 0;
         this.searchInterval = 500;
 
         this.sort = 'title';
+
+        // feel free to replace this with whatever if you don't like it (including a getter)
+        this.titleString = ' - badcnamp';
+        this.title = '';
+
+        this.remoteCache = { tags: {}, artists: {} };
+
+        this.selectedTab = undefined;
     }
 
     create(data, first = true) {
         if (first) {
             this.setupHistory();
-            let search = window.location.search.replace('?', '').split(',');
+            let search = window.location.search.substring(1).split(',');
             this.switchFromHistory(search[0], search?.[1]);
         } else {
             for (let i of this.div.children) {
@@ -67,10 +74,8 @@ export default class BrowseUI {
             this.ui = new this.views[this.uiview](this, data);
             this.div.innerHTML = '';
             this.div.appendChild(this.ui.div);
-            //this.div.replaceChildren(this.ui.div);
             this.createTabs();
             this.createInput();
-            //this.scroll();
         }
     }
 
@@ -90,61 +95,9 @@ export default class BrowseUI {
         this.create(data, false);
         this.trackMenu.switch();
         this.albumMenu.switch();
+        this.selectTab(newUI);
         Timer.stop(t);
         return;
-    }
-
-    createTabs() {
-        let tabs = document.createElement('div');
-        createP(
-            tabs,
-            '< Back',
-            () => {
-                this.back();
-            },
-            ['browse-tab']
-        );
-        createP(
-            tabs,
-            'Artists',
-            () => {
-                this.switchUI('artists');
-            },
-            ['browse-tab']
-        );
-        createP(
-            tabs,
-            'Albums',
-            () => {
-                this.switchUI('albums');
-            },
-            ['browse-tab']
-        );
-        createP(
-            tabs,
-            'Tracks',
-            () => {
-                this.switchUI('tracks');
-            },
-            ['browse-tab']
-        );
-        createP(
-            tabs,
-            'Tags',
-            () => {
-                this.switchUI('tags');
-            },
-            ['browse-tab']
-        );
-        createP(
-            tabs,
-            'Playlists',
-            () => {
-                this.switchUI('playlists');
-            },
-            ['browse-tab']
-        );
-        this.div.insertBefore(tabs, this.div.children[0]);
     }
 
     createInput() {
@@ -153,17 +106,27 @@ export default class BrowseUI {
             addButton = document.createElement('button'),
             profileSelect = document.createElement('select'),
             search = document.createElement('input');
+        function add() {
+            switch (getLinkType(input.value)) {
+                case 'album':
+                    this.library.add(input.value);
+                    break;
+                case 'tag':
+                    this.switchUI(
+                        'bctag',
+                        input.value.match(/\/tag\/([a-zA-Z\-]+)/)[1]
+                    );
+                    break;
+            }
+            input.value = '';
+        }
         input.addEventListener('keydown', (e) => {
             if (e.key == 'Enter') {
-                this.library.add(input.value);
-                input.value = '';
+                add.apply(this);
             }
         });
-        input.placeholder = 'Paste an album link here...';
-        addButton.onclick = () => {
-            this.library.add(input.value);
-            input.value = '';
-        };
+        input.placeholder = 'Paste an album or tag link here...';
+        addButton.onclick = add.bind(this);
         addButton.innerHTML = 'add!';
         for (let i of this.library.profileManager.profiles) {
             let profile = document.createElement('option');
@@ -196,7 +159,6 @@ export default class BrowseUI {
             } else {
                 this.library.profileManager.switchProfiles(item.value);
             }
-            //profileSelect.multiple
         };
 
         search.addEventListener('keyup', async () => {
@@ -235,17 +197,35 @@ export default class BrowseUI {
         input.focus();
     }
 
-    async back() {
-        /*if (this.history.length >= 2) {
-            let top = this.history.pop()[2];
-            let h = this.history.pop();
-            //this.history.pop();
-            await this.switchUI(h[0], h[1]);
-            this.div.scrollTop = top;
-            //this.div.scrollTop = h[2];
+    createTabs() {
+        let tabs = document.createElement('div');
+        /*tabs.style = `display: table;
+        width: 100%;
+        table-layout: fixed;`;*/
+        tabs.classList.add('tab-group');
+        for (let i of ['Artists', 'Albums', 'Tracks', 'Tags', 'Playlists']) {
+            new UITab(
+                i,
+                () => {
+                    this.switchUI(i.toLowerCase());
+                },
+                tabs,
+                ['browse-tab']
+            );
+        }
+        this.div.insertBefore(tabs, this.div.children[0]);
+    }
+
+    selectTab(type) {
+        /*if (this.selectedTab) {
+            this.selectedTab.classList.remove('selected');
+            this.selectedTab = undefined;
         }*/
-        if (this.history.length > 1) {
-            window.history.back();
+        this.selectedTab = undefined;
+        let index;
+        if ((index = this.tabs.indexOf(type)) > -1) {
+            this.selectedTab = this.div.children[1].children[index];
+            this.selectedTab.classList.add('selected');
         }
     }
 
@@ -283,37 +263,40 @@ export default class BrowseUI {
             case 'artists':
             case 'playlists':
             case 'tags':
-                document.title = type;
+                this.title = type;
                 await this.switchUI(type, null, false);
                 break;
             case 'album':
                 let album = this.library.albums[id];
-                document.title = album.title;
+                this.title = album.title;
                 await this.switchUI('album', album, false);
                 break;
             case 'artist':
-                document.title = this.library.artists[id].rawName;
+                this.title = this.library.artists[id].rawName;
                 await this.switchUI(type, id, false);
                 break;
             case 'playlist':
                 let playlist = this.library.playlists[id];
-                document.title = playlist.name;
+                this.title = playlist.name;
                 await this.switchUI(type, playlist, false);
                 break;
             case 'search':
-                document.title = 'Search';
+                this.title = 'Search';
                 await this.switchUI('search', id, false);
                 break;
             case 'tag':
-                document.title = id;
+                this.title = id;
                 await this.switchUI('tag', id, false);
+                break;
+            case 'bctag':
+                this.title = `${id} on bandcamp`;
+                await this.switchUI('bctag', id, false);
                 break;
             default:
                 await this.switchUI('albums');
+                break;
         }
-        //feel free to remove this if you don't like it, this is just to make it
-        // easy to tell apart from other tabs
-        document.title += ' - badcnamp';
+        this.title += this.titleString;
         this.scroll(scroll || 0);
     }
 
@@ -324,27 +307,32 @@ export default class BrowseUI {
             case 'album':
             case 'playlist':
                 state.id = data.id;
-                document.title =
+                this.title =
                     this.library[type + 's'][data.id][
                         type == 'album' ? 'title' : 'name'
                     ];
                 search += `,${data.id}`;
                 break;
             case 'artist':
-                document.title = this.library.artists[data].rawName;
+                this.title = this.library.artists[data].rawName;
                 state.id = data;
                 search += `,${data}`;
                 break;
             case 'tag':
-                document.title = data;
+                this.title = data;
+                state.id = data;
+                search += `,${data}`;
+                break;
+            case 'bctag':
+                this.title = `${data} on bandcamp`;
                 state.id = data;
                 search += `,${data}`;
                 break;
             default:
-                document.title = type;
+                this.title = type;
+                break;
         }
-        // same here as above
-        document.title += ' - badcnamp';
+        this.title += this.titleString;
         window.history.pushState(state, type, search);
     }
 }

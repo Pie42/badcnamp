@@ -13,12 +13,12 @@ export default class ArtistsView {
             /*artists = Object.entries(artists)
                 .sort((a, b) => b[1].tracks.length - a[1].tracks.length)
                 .map((i) => i[0]);*/
-            artists = sortArray(Object.entries(artists), 'custom', '[1].tracks.length');
+            artists = sortArray(Object.entries(artists), '[1].tracks.length');
         } else {
             /*artists = Object.keys(artists).sort((a, b) => {
                 return (b.toLocaleLowerCase() < a.toLocaleLowerCase()) * 2 - 1;
             });*/
-            artists = sortArray(Object.keys(artist), 'string');
+            artists = sortArray(Object.keys(artists), 'string');
         }
         for (let i of artists) {
             let artistDiv = document.createElement('div'),

@@ -6,6 +6,7 @@
 }*/
 
 import { createP, createLongP, createTrackDiv } from '../Util.js';
+import { UITagSection } from './elements/UIElements.js';
 
 export default class AlbumView {
     constructor(manager, data) {
@@ -14,6 +15,7 @@ export default class AlbumView {
         this.library = manager.library;
         this.album = data;
         this.tracks = this.album.tracks;
+        this.tags = this.album.tags;
         this.div = document.createElement('div');
         this.cover = document.createElement('img');
         this.cover.style.width = '40%';
@@ -61,5 +63,7 @@ export default class AlbumView {
         });
         //this.album = album;
         //this.tracks = album.tracks;
+
+        new UITagSection(this.div, this.tags, manager);
     }
 }

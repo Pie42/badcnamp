@@ -1,6 +1,7 @@
 import { sortArray } from '../Util.js';
 import { createTrackDiv } from '../Util.js';
 import { createLongP, createP } from '../Util.js';
+import { UITagSection, UIShuffleButton } from './elements/UIElements.js';
 
 export default class ArtistView {
     constructor(manager, data) {
@@ -9,6 +10,7 @@ export default class ArtistView {
         this.artist = this.library.artists[data];
         this.albums = this.artist.albums;
         this.tracks = this.artist.tracks;
+        this.tags = this.artist.tags;
 
         this.div = document.createElement('div');
         let artistName = document.createElement('h1');
@@ -17,7 +19,11 @@ export default class ArtistView {
 
         let albumHeader = document.createElement('h4');
         albumHeader.innerHTML = 'Albums';
+        albumHeader.style.display = 'inline';
         this.div.appendChild(albumHeader);
+        new UIShuffleButton(this.div, this.manager, () =>
+            this.albums.map((i) => i.tracks).flat()
+        );
 
         /*let albums = this.albums.sort(
             (a, b) => (a.title.toLowerCase() > b.title.toLowerCase()) * 2 - 1
@@ -65,5 +71,14 @@ export default class ArtistView {
             let i = this.tracks[j];
             createTrackDiv(this.div, i.title, i, this.library, j, tracks);
         }
+
+        /*let tagHeader = document.createElement('h5'),
+            tags = sortArray(Object.keys(this.tags), 'string');
+        tagHeader.innerHTML = 'Tags';
+        this.div.appendChild(tagHeader);
+        for (let j of tags) {
+            this.div.appendChild(new UITag(j, manager).div);
+        }*/
+        new UITagSection(this.div, Object.keys(this.tags), manager);
     }
 }

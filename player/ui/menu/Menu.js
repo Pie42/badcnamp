@@ -23,7 +23,8 @@ export default class Menu {
                 this.div,
                 'Add to Playlist',
                 this.playlist.bind(this),
-                this
+                this,
+                false
             ),
             new MenuButton(this.div, 'Delete', this.delete.bind(this), this),
             new MenuButton(
@@ -124,6 +125,7 @@ export default class Menu {
             this.div.removeChild(this.tempMenu);
             this.tempMenu = undefined;
             this.library.save();
+            this.switch();
         };
         this.div.insertBefore(this.tempMenu, this.buttons[3].div);
     }

@@ -27,5 +27,6 @@ export default class AlbumMenu extends Menu {
 
     addToPlaylist(playlist) {
         playlist.tracks.push(...this.context.tracks);
+        playlist.dirty();
     }
 }

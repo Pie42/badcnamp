@@ -3,9 +3,13 @@ import { splitArtists } from '../Util.js';
 import Tag from './Tag.js';
 
 export default class Album {
-    constructor(data, artists, tracks, tags) {
+    // artists, tracks, and tags all get dummy inputs as the default
+    // so that you can make an Album without having side effects.
+    // (objects and arrays are pass-by-reference so real values work, too.)
+    constructor(data, artists = {}, tracks = [], tags = {}) {
         this.title = data.title;
         this.artist = data.artist;
+        //this.link = data.link.match(/^(.+?)\??.*/)[1];
         this.link = data.link;
         this.image = data.image;
         this.tracks = [];
@@ -18,14 +22,16 @@ export default class Album {
                 albums: [],
                 tracks: [],
                 capitalisations: {},
+                tags: {},
             };
             artists[albumGivenArtist].capitalisations[this.artist] = ~(
                 ~artists[albumGivenArtist].capitalisations[this.artist] - 1
             );
         }
-        //technically a unix timestamp but whatever
+        // technically a unix timestamp but whatever
+        // unimplemented, unused
         this.date = 0;
-        //for use in exporting everything (mostly for making playlists lol)
+        // for use in exporting everything (playlists, the queue, etc.)
         this.id = undefined;
         for (let j in data.tracks) {
             let i = data.tracks[j],
@@ -43,6 +49,7 @@ export default class Album {
                     albums: [],
                     tracks: [],
                     capitalisations: {},
+                    tags: {},
                 };
                 artists[artist].tracks.push(track);
                 artists[artist].capitalisations[rawArtist] = ~(
@@ -66,6 +73,9 @@ export default class Album {
         }
         for (let i in this.albumArtists) {
             artists[i].albums.push(this);
+            for (let tag of this.tags) {
+                artists[i].tags[tag] = true;
+            }
         }
     }
 }

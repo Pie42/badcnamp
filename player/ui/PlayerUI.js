@@ -1,5 +1,8 @@
+import { createP } from '../Util.js';
 import { isOutdated } from '../Util.js';
 import ControlsUI from './player/ControlsUI.js';
+import PiPUI from './player/PiPUI.js';
+import QueueUI from './player/QueueUI.js';
 import ScrobbleUI from './player/ScrobbleUI.js';
 
 export default class PlayerUI {
@@ -9,6 +12,10 @@ export default class PlayerUI {
         this.div.style.height = '100%';
         this.div.style.borderLeft = 'solid #0f0c0c';
         this.div.style.borderWidth = '1px';
+        this.playerDiv = document.createElement('div');
+        //this.p
+        this.div.appendChild(this.playerDiv);
+        this.cover = document.createElement('img');
         this.library = library;
         this.audio = library.audio;
         //this.scope = this.library.tracks;
@@ -17,15 +24,20 @@ export default class PlayerUI {
         this.autoQueue = true;
         //this.div.appendChild(this.audio);
         //this.audio.controls = true;
+
+        // the currently visible div
+        this.currentDiv = this.playerDiv;
     }
 
     create() {
         let thumbnaildiv = document.createElement('div');
         thumbnaildiv.classList.add('thumbnail');
-        let cover = document.createElement('img');
+        //let cover = document.createElement('img');
+        let cover = this.cover;
+        cover.crossOrigin = 'Anonymous';
         cover.style.width = '50%';
         thumbnaildiv.appendChild(cover);
-        this.div.appendChild(thumbnaildiv);
+        this.playerDiv.appendChild(thumbnaildiv);
         cover.style.margin = '0 auto';
         cover.style.display = 'block';
 
@@ -34,11 +46,11 @@ export default class PlayerUI {
         document.head.appendChild(favicon);
 
         let title = document.createElement('h1');
-        this.div.appendChild(title);
+        this.playerDiv.appendChild(title);
         //holds h3 elements
         let artist = document.createElement('div');
         artist.style.display = 'block';
-        this.div.appendChild(artist);
+        this.playerDiv.appendChild(artist);
         title.style.textAlign = artist.style.textAlign = 'center';
         /*artist.onclick = () => {
             if (this.library.playing) {
@@ -51,7 +63,7 @@ export default class PlayerUI {
                 this.browseui.switchUI('album', this.library.playing.album);
             }
         };
-        this.div.appendChild(album);
+        this.playerDiv.appendChild(album);
         this.audio.onstalled = async () => {
             let t = this.audio.currentTime;
             await this.library.refetch(this.library.playing.album);
@@ -77,8 +89,22 @@ export default class PlayerUI {
         this.scrobbleui.registerEvents();
         this.div.appendChild(this.scrobbleui.div);
 
+        this.pipui = new PiPUI(this);
+        this.pipui.registerEvents();
+        this.div.appendChild(this.pipui.div);
+
         this.controlsui = new ControlsUI(this);
-        this.div.appendChild(this.controlsui.div);
+        this.playerDiv.appendChild(this.controlsui.div);
+        this.playerDiv.appendChild(this.audio);
+
+        this.queueui = new QueueUI(this);
+        this.queueui.registerEvents();
+        this.div.appendChild(this.queueui.div);
+        this.queueui.create();
+
+        this.queueButton = createP(this.playerDiv, 'View Queue', () => {
+            this.switchUI('queue');
+        });
 
         this.audio.onloadedmetadata = () => {
             let playing = this.library.playing;
@@ -87,7 +113,9 @@ export default class PlayerUI {
             title.innerHTML = playing.title;
             //artist.innerHTML = playing.rawArtistString;
             // fastest way as per https://jsben.ch/DwfAd
+            // actually not anymore but w/e
             artist.innerHTML = '';
+
             for (let i in playing.rawArtists.splitters) {
                 let currentArtist = playing.rawArtists.splitters[i],
                     artisth3 = document.createElement('h3');
@@ -130,7 +158,14 @@ export default class PlayerUI {
             this.library.playing.plays++;
             this.next();
         });
-        this.div.appendChild(this.audio);
+        this.audio.addEventListener('play', () => {
+            this.library.scope2.updateTitle();
+        });
+        this.audio.addEventListener('pause', () => {
+            document.title = badcnamp.state.uimanager.browseui.title;
+        });
+        //document.title = badcnamp.state.uimanager.browseui.title;
+        //this.playerDiv.appendChild(this.audio);
         this.audio.controls = true;
 
         if ('mediaSession' in navigator) {
@@ -187,7 +222,7 @@ export default class PlayerUI {
             }
         }*/
         //let [k, n] = this.library.scope2.nextTrack;
-        let k = this.library.scope2.next();
+        let k = this.library.scope2.finishTrack();
         /*if (k == undefined) {
             this.library.scope2.loop();
             k = this.library.scope2.nextTrack;
@@ -239,7 +274,7 @@ export default class PlayerUI {
     prepareNextTrack() {
         let temp;
         let nextTrack = this.library.scope2.nextTrack;
-            /*this.library.queue.length > 0
+        /*this.library.queue.length > 0
                 ? this.library.queue[0].length
                     ? [this.library.queue[0], null]
                     : this.library.queue[0]
@@ -258,7 +293,7 @@ export default class PlayerUI {
         if (this.audio.currentTime > 10) {
             this.audio.currentTime = 0;
         } else {
-            if (this.library.prev.length > 0) {
+            /*if (this.library.prev.length > 0) {
                 let p, n;
                 let h = this.library.prev.shift();
                 if (h.length) {
@@ -270,7 +305,9 @@ export default class PlayerUI {
                 }
                 this.library.play(p, n);
                 this.library.queue.unshift([p, n]);
-            }
+            }*/
+            let p = this.library.scope2.prev();
+            this.library.play(p);
         }
     }
 
@@ -283,6 +320,24 @@ export default class PlayerUI {
     }
 
     refresh() {}
+
+    switchUI(newUI) {
+        this.currentDiv.style.display = 'none';
+        switch (newUI) {
+            case 'default':
+                this.currentDiv = this.playerDiv;
+                this.currentDiv.style.display = 'block';
+                break;
+            case 'queue':
+                this.currentDiv = this.queueui.div;
+                this.currentDiv.style.display = 'block';
+                this.queueui.current.div.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                });
+                break;
+        }
+    }
 
     /**
      * Formats a time in seconds as a string.

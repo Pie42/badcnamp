@@ -19,7 +19,12 @@ export default class SearchView {
     }
 
     search(string) {
-        let match = new RegExp(string, 'i');
+        let match;
+        if (string.match(/^\/.+\/$/)) {
+            match = new RegExp(string.replace(/^\/(.+)\/$/, '$1'), 'i');
+        } else {
+            match = string;
+        }
         this.searchString = match;
         this.rawSearch = string;
         this.tracks = this.library.tracks.filter((i) => i.title.match(match));

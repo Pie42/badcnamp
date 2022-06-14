@@ -1,11 +1,13 @@
 import settings from './constants/PlayerConstants.js';
 import Tag from './library/Tag.js';
+import BCTag from './ui/bcpages/BCTag.js';
 
 /**
  *
  * @param {HTMLDivElement} parentElement
  * @param {String} innerText
  * @param {Function} onclick
+ * @param {String[]} [classes=[]]
  * @returns {HTMLParagraphElement}
  */
 function createP(parentElement, innerText, onclick, classes = []) {
@@ -21,6 +23,8 @@ function createP(parentElement, innerText, onclick, classes = []) {
 
 /**
  * Creates a 'p' element inside of a div with classes to let it truncate the 'p' via css.
+ * This function is mostly meant to be used for anything that isn't explicitly defined in
+ * the program (and thus has an unknown length).
  * @param {HTMLElement} parentElement The element to put the new div in.
  * @param {String} innerHTML The text (or really anything) to put inside of the 'p' element.
  * @param {Function} onclick The function to call upon clicking the 'p' element.
@@ -143,11 +147,28 @@ function doTheFunkyTitleThing(trackInfo) {
         titling = ' - ';
     } else {
         titling = titling.match(
-            /(.+)([^\p{L}\n \p{Pe}\p{Ps}\p{N}'.!?-])((?:.(?!\2))+)\n.+\2(?!\3)/iu
+            /(.+)([^\p{L}\n \p{Pe}\p{Ps}\p{N}'.!?\-:,／])((?:.(?!\2))+)\n.+\2(?!\3)/iu
         )?.[2];
     }
     let titlinging = new RegExp(`(.+?)(${titling}| - )(.+)`);
     return [rumbening, titlinging];
+}
+
+/**
+ * A less accurate version of the function above.
+ * @param {Track} track The track to parse
+ * @returns {String[]} The parsed track artist and title
+ */
+function guessTheTitle(artist, title) {
+    let numbering =
+            title.match(/([\d\w\. ]+)(\d)([\. ]*)(?!\n)(\D.+)/)?.[4] || title,
+        dashed = numbering.match(/(.+)( - )(.+)/),
+        split = dashed
+            ? dashed
+            : numbering.match(
+                  /^(.+?) ?([^\p{L}\n \p{Pe}\p{Ps}\p{N}'.!?\-:,]) ?((?:.(?!\2))+)/u
+              );
+    return split ? [split[1], split[3]] : [artist, title];
 }
 
 /**
@@ -198,58 +219,83 @@ function rateLimit(callback, max, rate = 100, step = 100) {
     }
 
     let generator = generate(),
+        genInterval,
+        returnValue;
+
+    let nextPromise = new Promise((resolve) => {
         genInterval = window.setInterval(() => {
             if (generator.next().done) {
                 window.clearInterval(genInterval);
+                resolve();
             }
         }, rate);
-    generator.next();
-    return () => {
-        window.clearInterval(genInterval);
-    };
+        returnValue = () => {
+            window.clearInterval(genInterval);
+            resolve();
+        };
+    });
+    //generator.next();
+    
+    returnValue.then = (...a) => nextPromise.then(...a);
+    return returnValue;
 }
 
-async function upgradeLibrary(library, max = 0) {
-    let features = { tags: !library.tags };
-    console.log(features, max);
-    if (Object.values(features).some((i) => i)) {
-        let albums = library.albums;
-        if (features.tags) {
-            library.tags = {};
+async function upgradeLibrary(library, max = 0, dryRun = false) {
+    let features = {
+            /*tags: !Math.min(
+            ...badcnamp.state.library.albums.map((i) => i?.tags?.length)
+        ),*/
+            tags: badcnamp.state.library.albums
+                .filter((i) => !i?.tags?.length)
+                .map((i) => i.id),
+        },
+        albumsToUpgrade = Array.from(new Set(Object.values(features).flat()));
+    //console.log(features, max);
+    if (dryRun) {
+        for (let i in features) {
+            console.log(`will add ${i} to albums ${features[i]}`);
         }
-        for (let i = 0; i < max || albums.length; i++) {
-            let album = albums[i];
-            await fetch(settings.path + album.link)
-                .then(
-                    (result) => result.text(),
-                    () => {
-                        console.log(album);
-                    }
-                )
-                .then((result) => {
-                    if (features.tags) {
-                        let tags = parseTags(result);
-                        album.tags = tags;
-                        for (let tag of tags) {
-                            library.tags[tag] =
-                                library.tags[tag] || new Tag(tag);
-                            let lTag = library.tags[tag];
-                            for (let artist in album.albumArtists) {
-                                lTag.artists[artist] = 1;
-                            }
-                            lTag.albums.push(album);
-                            lTag.tracks.push(...album.tracks);
+    } else {
+        //if (Object.values(features).some((i) => i)) {
+        if (albumsToUpgrade.length) {
+            let albums = albumsToUpgrade.map((i) => library.albums[i]);
+            if (features.tags) {
+                library.tags = library?.tags || {};
+            }
+            for (let i = 0; i < max || albums.length; i++) {
+                let album = albums[i];
+                await fetch(settings.path + album.link)
+                    .then(
+                        (result) => result.text(),
+                        () => {
+                            console.log(album);
                         }
-                    }
-                })
-                .catch(() => {
-                    console.log(album);
-                });
+                    )
+                    .then((result) => {
+                        if (features.tags) {
+                            let tags = parseTags(result);
+                            album.tags = tags;
+                            for (let tag of tags) {
+                                library.tags[tag] =
+                                    library.tags[tag] || new Tag(tag);
+                                let lTag = library.tags[tag];
+                                for (let artist in album.albumArtists) {
+                                    lTag.artists[artist] = 1;
+                                }
+                                lTag.albums.push(album);
+                                lTag.tracks.push(...album.tracks);
+                            }
+                        }
+                    })
+                    .catch(() => {
+                        console.log(album);
+                    });
+            }
         }
     }
 }
 
-function sortArray(arr, method, propertyChain = undefined) {
+function sortArray(arr, method = undefined) {
     let sorted = arr;
     switch (method) {
         case 'title':
@@ -280,13 +326,18 @@ function sortArray(arr, method, propertyChain = undefined) {
                 (a, b) =>
                     (a.toLocaleLowerCase() > b.toLocaleLowerCase()) * 2 - 1
             );
-        case 'custom':
-            if (propertyChain) {
-                let fun = Function('a', `return a${propertyChain}`);
-                sorted = arr.sort((a, b) => (fun(a) > fun(b)) * 2 - 1);
-            }
+            break;
+        // lol method, useful in some functions
+        case 'none':
+            sorted = arr;
             break;
         default:
+            if (method) {
+                let fun = Function('a', `return a${method}`);
+                sorted = arr.sort((a, b) => (fun(a) > fun(b)) * 2 - 1);
+            } else {
+                sorted = arr.sort();
+            }
             break;
     }
     return sorted;
@@ -309,6 +360,16 @@ function accordion(headerText, size = 'h4') {
     return div;
 }
 
+function getLinkType(link) {
+    let type;
+    if (link.match(/bandcamp\.com\/tag\//)) {
+        type = 'tag';
+    } else {
+        type = 'album';
+    }
+    return type;
+}
+
 const stupidRegex =
     /^(.+?) ?([^\p{Quotation_Mark}\p{Dash}\p{L}\p{White_Space}\p{Terminal_Punctuation}\p{N}\[\]\(\)\{\}~\^_&\/$\\\uFEFF]) ?(?!\p{LC})((?:(?!\2).)+)$/u;
 
@@ -317,8 +378,10 @@ export {
     createLongP,
     parseTralbumData,
     parseTags,
+    parseFromDom,
     createTrackDiv,
     doTheFunkyTitleThing,
+    guessTheTitle,
     stupidRegex,
     isOutdated,
     splitArtists,
@@ -326,4 +389,5 @@ export {
     upgradeLibrary,
     sortArray,
     accordion,
+    getLinkType,
 };

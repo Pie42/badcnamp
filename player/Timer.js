@@ -23,4 +23,17 @@ export default class Timer {
             delete this.timers[index];
         }
     }
+
+    static lap(index) {
+        if (this.timers[index]) {
+            let endTime = performance.now();
+            console.log(
+                `${this.timers[index][1]} currently ${
+                    (endTime - this.timers[index][0]) / 1000
+                } seconds in.`
+            );
+            return true;
+        }
+        return false
+    }
 }

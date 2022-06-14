@@ -9,28 +9,25 @@ export default class TagsView {
         this.tags = this.library.tags;
         this.data = data;
         this.div = document.createElement('div');
-        let tags = this.tags;
+        let tags = Object.entries(this.tags);
+        tags = tags.filter((i) => i[1].albums.length > 1);
         if (data?.sort == 'length') {
             /*tags = Object.entries(tags)
                 .sort((a, b) => b[1].tracks.length - a[1].tracks.length)
                 .map((i) => i[0]);*/
-            tags = sortArray(Object.entries(tags), 'custom', '[1].tracks.length * -1');
+            tags = sortArray(tags, '[1].tracks.length * -1');
         } else {
             /*tags = Object.keys(tags).sort((a, b) => {
                 return (b.toLocaleLowerCase() < a.toLocaleLowerCase()) * 2 - 1;
             });*/
-            tags = sortArray(Object.entries(tags), 'custom', '[0].toLocaleLowerCase()');
+            tags = sortArray(tags, '[0].toLocaleLowerCase()');
         }
         for (let i of tags) {
             let tag = i[1],
                 tagDiv = document.createElement('div'),
-                tagName = createLongP(
-                    tagDiv,
-                    tag.name,
-                    () => {
-                        manager.switchUI('tag', i[0]);
-                    }
-                ),
+                tagName = createLongP(tagDiv, tag.name, () => {
+                    manager.switchUI('tag', i[0]);
+                }),
                 arrowP = createP(tagDiv, ' >', () => {});
             arrowP.style.display = 'flex';
             arrowP.style.flexShrink = '0';

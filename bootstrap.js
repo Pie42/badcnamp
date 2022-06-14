@@ -14,8 +14,8 @@ export default function initialise() {
     badcnamp.export = badcnamp.state.library.completeExport.bind(
         badcnamp.state.library
     );
-    badcnamp.upgrade = function (max) {
-        upgradeLibrary(badcnamp.state.library, max);
+    badcnamp.upgrade = function (max, dryRun = false) {
+        upgradeLibrary(badcnamp.state.library, max, dryRun);
     };
     window.badcnamp = badcnamp;
 }
