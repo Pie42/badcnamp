@@ -1,5 +1,5 @@
-import { createP, createLongP } from '../Util.js';
-import { UIAlbum } from './elements/UIElements.js';
+import { createP, createLongP } from '../../Util.js';
+import { UIAlbum } from '../elements/UIElements.js';
 
 export default class AlbumsView {
     constructor(manager, data) {

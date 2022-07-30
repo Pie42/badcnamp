@@ -1,4 +1,4 @@
-import { createP, createLongP, sortArray } from '../Util.js';
+import { createP, createLongP, sortArray } from '../../Util.js';
 
 export default class ArtistsView {
     constructor(manager, data) {

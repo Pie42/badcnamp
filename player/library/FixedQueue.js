@@ -6,14 +6,16 @@ export default class FixedQueue {
         this.queue = [];
         this.index = 0;
 
-        // this is named a bit weirdly, but it tracks the end of the tracks that have been put
+        // This is named a bit weirdly, but it tracks the end of the tracks that have been put
         // in not from the original scope in order to make 'add to queue' behave in a sensible way.
-
-        // not implemented.
+        // Not implemented.
         this.queueEnd = 0;
 
         this.mode = 'shuffle';
         this.repeat = 'all';
+
+        // a toggle for when playing songs that aren't actually in the queue (e.g. from a bctag)
+        this.notInQueue = false;
     }
 
     shuffle(startingIndex) {
@@ -67,8 +69,8 @@ export default class FixedQueue {
     }
 
     get nextTrack() {
-        return this.index < this.queue.length - 1
-            ? this.queue[this.index + 1]
+        return this.index < this.queue.length - 1 || this.notInQueue
+            ? this.queue[this.index + 1 - this.notInQueue]
             : undefined;
     }
 
@@ -115,8 +117,11 @@ export default class FixedQueue {
     next() {
         if (this.queueEnd == this.index) {
             this.queueEnd++;
+            this.queueEnd -= this.notInQueue;
         }
         this.index++;
+        this.index -= this.notInQueue;
+        this.notInQueue = false;
         if (this.index == this.queue.length) {
             this.loop();
         }

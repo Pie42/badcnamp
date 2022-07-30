@@ -1,4 +1,4 @@
-import settings from "../constants/PlayerConstants.js";
+import settings from "../../constants/PlayerConstants.js";
 
 export default class SettingsView {
     constructor(manager, data) {

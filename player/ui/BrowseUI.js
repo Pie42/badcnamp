@@ -1,19 +1,19 @@
 import DataLoader from '../state/DataLoader.js';
-import AlbumView from './AlbumView.js';
-import AlbumsView from './AlbumsView.js';
+import AlbumView from './browse/AlbumView.js';
+import AlbumsView from './browse/AlbumsView.js';
 import { createP, getLinkType } from '../Util.js';
-import TracksView from './TracksView.js';
-import ArtistsView from './ArtistsView.js';
-import ArtistView from './ArtistView.js';
+import TracksView from './browse/TracksView.js';
+import ArtistsView from './browse/ArtistsView.js';
+import ArtistView from './browse/ArtistView.js';
 import BCTag from './bcpages/BCTag.js';
-import PlaylistsView from './PlaylistsView.js';
-import PlaylistView from './PlaylistView.js';
+import PlaylistsView from './browse/PlaylistsView.js';
+import PlaylistView from './browse/PlaylistView.js';
 import TrackMenu from './menu/TrackMenu.js';
 import AlbumMenu from './menu/AlbumMenu.js';
-import SearchView from './SearchView.js';
+import SearchView from './browse/SearchView.js';
 import Timer from '../Timer.js';
-import TagsView from './TagsView.js';
-import TagView from './TagView.js';
+import TagsView from './browse/TagsView.js';
+import TagView from './browse/TagView.js';
 import { UITab } from './elements/UIElements.js';
 import RemoteAlbumMenu from './menu/RemoteAlbumMenu.js';
 
@@ -64,7 +64,7 @@ export default class BrowseUI {
     create(data, first = true) {
         if (first) {
             this.setupHistory();
-            let search = window.location.search.substring(1).split(',');
+            let search = window.location.search.substring(1).split(/,(.+)/);
             this.switchFromHistory(search[0], search?.[1]);
         } else {
             for (let i of this.div.children) {
@@ -241,7 +241,11 @@ export default class BrowseUI {
     setupHistory() {
         window.addEventListener('popstate', (event) => {
             let state = event.state;
-            this.switchFromHistory(state?.type, state?.id, state?.scroll);
+            if (state) {
+                this.switchFromHistory(state?.type, state?.id, state?.scroll);
+            } else {
+                this.create();
+            }
         });
     }
 
@@ -285,6 +289,7 @@ export default class BrowseUI {
                 await this.switchUI('bctag', id, false);
                 break;
             default:
+                console.warn(`Failed to switch on type: ${type}, id: ${id}`);
                 await this.switchUI('albums');
                 break;
         }

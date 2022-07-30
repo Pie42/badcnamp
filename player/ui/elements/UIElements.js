@@ -1,4 +1,4 @@
-import { createP, createLongP, sortArray } from '../../Util.js';
+import { createP, createLongP, sortArray, getImageType } from '../../Util.js';
 
 class UITab {
     constructor(name, onclick, parent, classes = []) {
@@ -89,6 +89,7 @@ class UIRemoteAlbum {
         this.div.appendChild(this.img);
         this.img.onclick = () => {
             manager.library.play(album.track);
+            manager.library.scope2.notInQueue = true;
         };
         this.img.classList.add('large-album');
 
@@ -144,12 +145,12 @@ class UIQueueItem {
      * @param {Number} state The state of the track (0 = past, 1 = current, 2 = upcoming)
      * @param {Function} onclick The function to be called upon clicking (namely, what plays the track)
      */
-    constructor(parent, track, state, onclick) {
+    constructor(parent, manager, track, state, onclick) {
         this.div = document.createElement('div');
         this.div.classList.add('queue-item');
 
         this.image = document.createElement('img');
-        this.image.src = track.album.image;
+        this.image.src = getImageType(track.album.image, 101);
         this.image.classList.add('queue-item-image');
 
         this.title = document.createElement('h2');
@@ -163,10 +164,21 @@ class UIQueueItem {
         this.infoDiv = document.createElement('div');
         this.infoDiv.classList.add('queue-item-info');
 
+        this.menuDiv = document.createElement('div');
+        this.menuDiv.classList.add('queue-item-menu', 'pointer-hover');
+
+        this.menu = createP(this.menuDiv, '\u22ee', (e) => {
+            e.stopPropagation();
+            manager.trackMenu.switch(this.menu, track);
+        });
+        this.menuDiv.onclick = this.menu.onclick;
+
         this.div.appendChild(this.image);
         this.infoDiv.appendChild(this.title);
         this.infoDiv.appendChild(this.artist);
         this.div.appendChild(this.infoDiv);
+        this.menuDiv.appendChild(this.menu);
+        this.div.appendChild(this.menuDiv);
 
         switch (state) {
             case 0:
@@ -183,6 +195,14 @@ class UIQueueItem {
         parent.appendChild(this.div);
     }
 }
+
+/*class UIRemoteImage {
+    constructor(parent, id, type) {
+        this.img = document.createElement('img');
+        this.img.src = `https://f4.bcbits.com/img/a${id}_${type}.jpg`;
+        parent.appendChild(this.img);
+    }
+}*/
 
 export {
     UITab,

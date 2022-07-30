@@ -1,7 +1,5 @@
-import { sortArray } from '../Util.js';
-import { createTrackDiv } from '../Util.js';
-import { createLongP, createP } from '../Util.js';
-import { UITagSection, UIShuffleButton } from './elements/UIElements.js';
+import { sortArray, createTrackDiv, createLongP, createP } from '../../Util.js';
+import { UITagSection, UIShuffleButton } from '../elements/UIElements.js';
 
 export default class ArtistView {
     constructor(manager, data) {

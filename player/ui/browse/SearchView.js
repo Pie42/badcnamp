@@ -1,4 +1,10 @@
-import { rateLimit, createTrackDiv, createLongP, createP } from '../Util.js';
+import {
+    rateLimit,
+    createTrackDiv,
+    createLongP,
+    createP,
+    filterArray,
+} from '../../Util.js';
 
 export default class SearchView {
     constructor(manager, data) {
@@ -19,18 +25,32 @@ export default class SearchView {
 
     search(string) {
         let match;
-        if (string.match(/^\/.+\/$/)) {
-            match = new RegExp(string.replace(/^\/(.+)\/$/, '$1'), 'i');
+        if (string.match(/^=/)) {
+            match = string.replace('=', '');
+            this.tracks = filterArray(this.library.tracks, match);
+            this.albums = filterArray(this.library.albums, match);
+            this.artists = filterArray(Object.keys(this.library.artists), match);
         } else {
-            match = string;
+            if (string.match(/^\/.+\/$/)) {
+                match = new RegExp(string.replace(/^\/(.+)\/$/, '$1'), 'i');
+            } else {
+                match = string;
+            }
+            this.tracks = filterArray(this.library.tracks, 'title', match);
+            this.albums = filterArray(this.library.albums, 'title', match);
+            this.artists = filterArray(
+                Object.keys(this.library.artists),
+                'string',
+                match
+            );
         }
         this.searchString = match;
         this.rawSearch = string;
-        this.tracks = this.library.tracks.filter((i) => i.title.match(match));
+        /*this.tracks = this.library.tracks.filter((i) => i.title.match(match));
         this.albums = this.library.albums.filter((i) => i.title.match(match));
         this.artists = Object.keys(this.library.artists).filter((i) =>
             i.match(match)
-        );
+        );*/
         /*let _albums = [...this.albums],
             _artists = [...this.artists];
         for (let i of this.tracks) {

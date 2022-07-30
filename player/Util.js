@@ -179,8 +179,8 @@ function guessTheTitle(artist, title) {
  */
 function splitArtists(artist) {
     try {
-        let split = artist.split(/(?: vs | \& | feat\. | x |\, | \+ )/i);
-        split.splitters = artist.split(/( vs | \& | feat\. | x |\, | \+ )/i);
+        let split = artist.split(/(?: vs | \& | feat\. | x |\, | \+ | ?\/ ?)/i);
+        split.splitters = artist.split(/( vs | \& | feat\. | x |\, | \+ | ?\/ ?)/i);
         return split;
     } catch (error) {
         return [artist];
@@ -207,10 +207,11 @@ function isOutdated(track) {
  * @param {Number} [rate=100] The rate in milliseconds to generate things, default 100
  * @param {Number} [step=100] The number of things to generate at a time, default 100
  */
-function rateLimit(callback, max, rate = 100, step = 100) {
+function rateLimit(callback, max, start = 0, rate = 100, step = 100) {
+    if (max == 0) return;
     function* generate() {
-        for (let i = 0; i < max; ) {
-            for (let j = step; j > 0 && i < max; j--, i++) {
+        for (let i = start; i < start + max; ) {
+            for (let j = step; j > 0 && i < start + max; j--, i++) {
                 callback(i);
             }
             yield i;
@@ -235,7 +236,7 @@ function rateLimit(callback, max, rate = 100, step = 100) {
         };
     });
     //generator.next();
-    
+
     returnValue.then = (...a) => nextPromise.then(...a);
     return returnValue;
 }
@@ -333,14 +334,50 @@ function sortArray(arr, method = undefined) {
             break;
         default:
             if (method) {
-                let fun = Function('a', `return a${method}`);
-                sorted = arr.sort((a, b) => (fun(a) > fun(b)) * 2 - 1);
+                try {
+                    let fun = Function('a', `return a${method}`);
+                    sorted = arr.sort((a, b) => (fun(a) > fun(b)) * 2 - 1);
+                } catch {
+                    sorted = arr.sort();
+                }
             } else {
                 sorted = arr.sort();
             }
             break;
     }
     return sorted;
+}
+
+function filterArray(array, method, data) {
+    let filtered = array;
+    switch (method) {
+        case 'title':
+            filtered = filtered.filter((i) => i.title.match(data));
+            break;
+        case 'artist':
+            filtered = filtered.filter(
+                (i) => i?.rawArtistString?.match(data) || i?.artist?.match(data)
+            );
+            break;
+        case 'string':
+            filtered = filtered.filter((i) => i.match(data));
+        case 'none':
+            break;
+        default:
+            try {
+                let fun;
+                if (data) {
+                    fun = Function('i', `return i${method}i${data}`);
+                } else {
+                    fun = Function('i', `return i${method}`);
+                }
+                filtered = filtered.filter(fun);
+            } catch (e) {
+                filtered = [];
+            }
+            break;
+    }
+    return filtered;
 }
 
 function accordion(headerText, size = 'h4') {
@@ -370,6 +407,82 @@ function getLinkType(link) {
     return type;
 }
 
+/* guide to bandcamp image types:
+0 - 1500x1500
+1 - 1500x1500
+2 - 350x350
+3 - 100x100
+4 - 300x300
+5 - 700x700
+6 - 100x100
+7 - 150x150
+8 - 124x124
+9 - 210x210
+10 - 1200x1200
+11 - 172x172
+12 - 138x138
+13 - 380x380
+14 - 368x368
+15 - 135x135
+16 - 700x700
+20 - 1024x1024
+21 - 120x120
+22 - 25x25
+23 - 300x300
+24 - 300x300
+25 - 700x700
+26 - 800x600
+27 - 715x402
+28 - 768x432
+29 - 100x75
+31 - 1024x1024
+32 - 380x285
+33 - 368x276
+36 - 400x300
+37 - 168x126
+38 - 144x108
+41 - 210x210
+42 - 50x50
+43 - 100x100
+44 - 200x200
+50 - 140x140
+65 - 700x700
+66 - 1200x1200
+67 - 350x350
+68 - 210x210
+69 - 700x700
+70 - 270x270
+71 - 540x540
+100 - 975x180
+101 - 90x90
+120 - 640x124
+130 - 1500x1500
+140 - 60x45
+150 - 1280x720
+151 - 720x1280
+160 - 60x100
+161 - 40x80
+165 - 210x210, has 'gift' label
+170 - 422x422
+171 - 646x646
+180 - 646x646
+200 - 420x420
+201 - 280x280
+202 - 140x140
+203 - 420x420
+204 - 360x360
+205 - 240x240
+206 - 180x180
+207 - 120x120
+220 - 900x468
+300 - 350x350, grayscale
+(extracted by a script that checked types up to 1000, there may be more)
+*/
+function getImageType(link, type) {
+    let id = /^\d+$/.test(link) ? link : link.match(/a(\d+)_/)[1];
+    return `https://f4.bcbits.com/img/a${id}_${type}.jpg`;
+}
+
 const stupidRegex =
     /^(.+?) ?([^\p{Quotation_Mark}\p{Dash}\p{L}\p{White_Space}\p{Terminal_Punctuation}\p{N}\[\]\(\)\{\}~\^_&\/$\\\uFEFF]) ?(?!\p{LC})((?:(?!\2).)+)$/u;
 
@@ -388,6 +501,8 @@ export {
     rateLimit,
     upgradeLibrary,
     sortArray,
+    filterArray,
     accordion,
     getLinkType,
+    getImageType,
 };

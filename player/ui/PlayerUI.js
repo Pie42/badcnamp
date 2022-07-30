@@ -1,9 +1,11 @@
-import { createP } from '../Util.js';
+import { createP, getImageType } from '../Util.js';
 import { isOutdated } from '../Util.js';
 import ControlsUI from './player/ControlsUI.js';
 import PiPUI from './player/PiPUI.js';
 import QueueUI from './player/QueueUI.js';
 import ScrobbleUI from './player/ScrobbleUI.js';
+import settings from '../constants/PlayerConstants.js';
+import TrackMenu from './menu/TrackMenu.js';
 
 export default class PlayerUI {
     constructor(library) {
@@ -29,6 +31,7 @@ export default class PlayerUI {
     }
 
     create() {
+        this.trackMenu = new TrackMenu(this.library, this.browseui);
         let thumbnaildiv = document.createElement('div');
         thumbnaildiv.classList.add('thumbnail');
 
@@ -104,7 +107,7 @@ export default class PlayerUI {
 
         this.audio.onloadedmetadata = () => {
             let playing = this.library.playing;
-            cover.src = playing.album.image;
+            cover.src = settings.path + playing.album.image;
             favicon.href = playing.album.image;
             title.innerHTML = playing.title;
             artist.innerHTML = '';
@@ -133,6 +136,11 @@ export default class PlayerUI {
                     artist: playing.rawArtistString,
                     artwork: [{ src: playing.album.image }],
                 });
+                navigator.mediaSession.setPositionState({
+                    duration: this.audio.duration,
+                    playbackRate: this.audio.playbackRate,
+                    position: this.audio.currentTime,
+                });
             }
         };
         this.audio.addEventListener('playing', () => {
@@ -148,13 +156,41 @@ export default class PlayerUI {
         });
         this.audio.addEventListener('ended', () => {
             this.library.playing.plays++;
+            this.library.save();
             this.next();
         });
         this.audio.addEventListener('play', () => {
             this.library.scope2.updateTitle();
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'playing';
+
+                navigator.mediaSession.setPositionState({
+                    duration: this.audio.duration,
+                    playbackRate: this.audio.playbackRate,
+                    position: this.audio.currentTime,
+                }); //*/
+            }
         });
         this.audio.addEventListener('pause', () => {
             document.title = badcnamp.state.uimanager.browseui.title;
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'paused';
+
+                navigator.mediaSession.setPositionState({
+                    duration: this.audio.duration,
+                    playbackRate: this.audio.playbackRate,
+                    position: this.audio.currentTime,
+                }); //*/
+            }
+        });
+        this.audio.addEventListener('seeked', () => {
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.setPositionState({
+                    duration: this.audio.duration,
+                    playbackRate: this.audio.playbackRate,
+                    position: this.audio.currentTime,
+                });
+            }
         });
         this.audio.controls = true;
 
@@ -185,7 +221,7 @@ export default class PlayerUI {
     }
 
     next() {
-        let k = this.library.scope2.finishTrack();
+        let k = this.library.scope2.trackFinish();
         this.library.play(k);
         this.prepareNextTrack();
     }

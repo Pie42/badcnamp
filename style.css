@@ -219,6 +219,7 @@ div.queue-item-info {
     display: inline-block;
     white-space: nowrap;
     overflow: hidden;
+    width: -webkit-fill-available;
 }
 
 .queue-item-title {
@@ -244,4 +245,10 @@ div.queue-item.current {
 div.queue {
     overflow-y: scroll;
     height: calc(100% - 19px);
+}
+
+div.queue-item-menu {
+    padding-inline: 1em;
+    font-size: 1.5em;
+    padding-block: 0.6em;
 }

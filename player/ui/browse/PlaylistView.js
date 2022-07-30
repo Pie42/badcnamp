@@ -1,4 +1,4 @@
-import { createP, createLongP, createTrackDiv } from '../Util.js';
+import { createP, createLongP, createTrackDiv } from '../../Util.js';
 
 export default class PlaylistView {
     constructor(manager, data) {

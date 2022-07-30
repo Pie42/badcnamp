@@ -1,5 +1,5 @@
-import { createP, createLongP, createTrackDiv } from '../Util.js';
-import { UITagSection } from './elements/UIElements.js';
+import { createP, createLongP, createTrackDiv } from '../../Util.js';
+import { UITagSection } from '../elements/UIElements.js';
 
 export default class AlbumView {
     constructor(manager, data) {

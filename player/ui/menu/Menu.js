@@ -45,6 +45,22 @@ export default class Menu {
         this.parent = undefined;
         this.context = undefined;
         this.tempMenu = undefined;
+        this.getSize();
+    }
+
+    getSize() {
+        let testDiv = document.createElement('div');
+        testDiv.style = `
+        visibility: hidden;
+        position: absolute;
+        left: -10000px;
+        width: 1000px;`;
+        document.body.appendChild(testDiv);
+        testDiv.appendChild(this.div);
+        this.width = this.div.offsetWidth;
+        this.height = this.div.offsetHeight;
+        document.body.removeChild(testDiv);
+        testDiv.removeChild(this.div);
     }
 
     delete() {}
@@ -71,7 +87,7 @@ export default class Menu {
                 } else {
                     let rect = this.parent.getBoundingClientRect();
                     this.div.style.top = rect.bottom;
-                    this.div.style.left = rect.left + 1;
+                    this.div.style.left = Math.min(rect.left + 1, window.innerWidth - this.width - 2);
                 }
                 this.parent.parentElement.classList.add('selected');
             }

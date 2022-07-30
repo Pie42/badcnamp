@@ -5,7 +5,7 @@ import {
     sortArray,
     rateLimit,
     accordion,
-} from '../Util.js';
+} from '../../Util.js';
 
 export default class TagView {
     constructor(manager, data) {

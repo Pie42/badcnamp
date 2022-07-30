@@ -38,6 +38,7 @@ export default class Album {
                 trackData = {};
             trackData.title = i[1];
             trackData.artist = i[0];
+            trackData.plays = i?.[2];
             trackData.album = this;
             trackData.id = +j;
             let track = new Track(trackData),

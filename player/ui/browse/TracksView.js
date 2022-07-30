@@ -1,4 +1,4 @@
-import { createTrackDiv, rateLimit } from '../Util.js';
+import { createTrackDiv, rateLimit } from '../../Util.js';
 
 export default class TracksView {
     constructor(manager, data) {

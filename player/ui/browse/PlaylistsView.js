@@ -1,4 +1,4 @@
-import { createP, createLongP } from '../Util.js';
+import { createP, createLongP } from '../../Util.js';
 
 export default class PlaylistsView {
     constructor(manager, data) {

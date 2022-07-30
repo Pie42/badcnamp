@@ -1,4 +1,4 @@
-import { createP, createLongP, sortArray } from '../Util.js';
+import { createP, createLongP, sortArray } from '../../Util.js';
 //import Menu from "./Menu.js";
 
 export default class TagsView {

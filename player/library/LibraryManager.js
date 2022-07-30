@@ -228,7 +228,7 @@ Are you still sure you want to add it?`)
             album.link,
             [
                 `${album.artist} - ${album.title}`,
-                album.tracks.map((i, j) => [i.rawArtistString, i.title]),
+                album.tracks.map((i, j) => [i.rawArtistString, i.title, i.plays]),
             ],
             album.tags,
         ];
@@ -272,6 +272,7 @@ Are you still sure you want to add it?`)
     completeImport() {}
 
     save() {
+        let t = Timer.start('save');
         DataLoader.set(
             `albums~${this.profileManager.activeProfile}`,
             this.fullAlbumExport()
@@ -280,6 +281,7 @@ Are you still sure you want to add it?`)
             `playlists~${this.profileManager.activeProfile}`,
             this.fullPlaylistExport()
         );
+        Timer.stop(t);
     }
 
     clear() {
