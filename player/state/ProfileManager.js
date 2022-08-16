@@ -11,6 +11,7 @@ export default class ProfileManager {
         this.profiles = DataLoader.get('profiles', '["Default"]');
         this.activeProfile =
             DataLoader.getRaw('active-profile') || this.profiles[0];
+        DataLoader.profile = this.activeProfile;
         this.activeProfileIndex = this.profiles.indexOf(this.activeProfile);
     }
 
@@ -18,6 +19,7 @@ export default class ProfileManager {
         let i;
         if ((i = this.profiles.indexOf(profile)) > -1) {
             this.activeProfile = profile;
+            DataLoader.profile = this.activeProfile;
             this.activeProfileIndex = i;
             this.library.clear();
             this.library.load(this.activeProfile);

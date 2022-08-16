@@ -161,17 +161,18 @@ export default class FixedQueue {
 
     save() {
         let queue = this.queue.map((i) => [i.album.id, i.id]);
-        DataLoader.set('queue', queue);
-        DataLoader.setRaw('index', this.index);
+        DataLoader.setP('queue', queue);
+        DataLoader.setRawP('index', this.index);
     }
 
     load() {
-        let queue = DataLoader.get('queue');
+        let queue = DataLoader.getP('queue');
         if (queue) {
             this.queue = queue.map(
                 (i) => this.library.albums[i[0]].tracks[i[1]]
             );
-            this.index = +DataLoader.getRaw('index');
+            this.index = +DataLoader.getRawP('index');
+            this.updateQueue();
             return true;
         }
         return false;

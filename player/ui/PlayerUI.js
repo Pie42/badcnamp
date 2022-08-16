@@ -144,6 +144,7 @@ export default class PlayerUI {
             }
         };
         this.audio.addEventListener('playing', () => {
+            this.library.scope2.updateTitle();
             if ('mediaSession' in navigator) {
                 let playing = this.library.playing;
                 navigator.mediaSession.metadata = new MediaMetadata({
@@ -152,16 +153,7 @@ export default class PlayerUI {
                     album: playing.album.title,
                     artwork: [{ src: playing.album.image }],
                 });
-            }
-        });
-        this.audio.addEventListener('ended', () => {
-            this.library.playing.plays++;
-            this.library.save();
-            this.next();
-        });
-        this.audio.addEventListener('play', () => {
-            this.library.scope2.updateTitle();
-            if ('mediaSession' in navigator) {
+
                 navigator.mediaSession.playbackState = 'playing';
 
                 navigator.mediaSession.setPositionState({
@@ -171,16 +163,23 @@ export default class PlayerUI {
                 }); //*/
             }
         });
+        this.audio.addEventListener('ended', () => {
+            this.library.playing.plays++;
+            this.library.save();
+            this.next();
+        });
         this.audio.addEventListener('pause', () => {
             document.title = badcnamp.state.uimanager.browseui.title;
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.playbackState = 'paused';
 
-                navigator.mediaSession.setPositionState({
-                    duration: this.audio.duration,
-                    playbackRate: this.audio.playbackRate,
-                    position: this.audio.currentTime,
-                }); //*/
+                if (this.audio.duration) {
+                    navigator.mediaSession.setPositionState({
+                        duration: this.audio.duration,
+                        playbackRate: this.audio.playbackRate,
+                        position: this.audio.currentTime,
+                    }); //*/
+                }
             }
         });
         this.audio.addEventListener('seeked', () => {

@@ -5,6 +5,7 @@ import settings from "../constants/PlayerConstants.js";
 export default class DataLoader {
     static init() {
         this.namespace = settings.namespace + '-';
+        this.profile = '';
         window.DataLoader = DataLoader;
         return;
     }
@@ -14,7 +15,7 @@ export default class DataLoader {
     }
 
     static set(key, value) {
-        localStorage.setItem(this.namespace + key, JSON.stringify(value));
+        this.setRaw(key, JSON.stringify(value));
     }
 
     static getRaw(key) {
@@ -23,5 +24,25 @@ export default class DataLoader {
 
     static setRaw(key, value) {
         localStorage.setItem(this.namespace + key, value);
+    }
+
+    static asProfile(key) {
+        return `${key}~${this.profile}`;
+    }
+
+    static getP(key, defaultValue = '[]') {
+        return this.get(this.asProfile(key), defaultValue);
+    }
+
+    static setP(key, value) {
+        this.set(this.asProfile(key), value);
+    }
+
+    static getRawP(key) {
+        return this.getRaw(this.asProfile(key));
+    }
+
+    static setRawP(key, value) {
+        this.setRaw(this.asProfile(key), value);
     }
 }

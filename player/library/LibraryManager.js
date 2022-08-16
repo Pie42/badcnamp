@@ -31,7 +31,9 @@ export default class LibraryManager {
     load(profile) {
         let t = Timer.start('Profile load');
 
-        let albums = DataLoader.get(`albums~${profile}`);
+        this.tags = {};
+        this.artists = {};
+        let albums = DataLoader.getP('albums');
         for (let i in albums) {
             let currentAlbum = albums[i],
                 albumData = {};
@@ -46,7 +48,6 @@ export default class LibraryManager {
             );
             this.albums[this.albums.length - 1].id = +i;
         }
-        window.albums = this.albums;
 
         for (let i in this.artists) {
             let artist = this.artists[i],
@@ -61,7 +62,7 @@ export default class LibraryManager {
             artist.rawName = t;
         }
 
-        let playlists = DataLoader.get(`playlists~${profile}`);
+        let playlists = DataLoader.getP('playlists');
         for (let i in playlists) {
             let currentPlaylist = playlists[i],
                 name = currentPlaylist[0],
@@ -75,17 +76,25 @@ export default class LibraryManager {
 
         if (this.scope2.load()) {
             this.play(this.scope2.playing).then((i) => {
-                this.audio.currentTime = DataLoader.getRaw('time');
+                this.audio.currentTime = DataLoader.getRawP('time');
                 this.audio.pause();
             });
         }
 
         function saveTime() {
-            DataLoader.setRaw('time', this.audio.currentTime);
+            DataLoader.setRawP('time', this.audio.currentTime);
         }
 
-        window.addEventListener('unload', saveTime.bind(this));
-        this.audio.addEventListener('pause', saveTime.bind(this));
+        let rst = saveTime.bind(this);
+        window.addEventListener('unload', rst);
+        this.audio.addEventListener('pause', rst);
+        let st = 0;
+        this.audio.addEventListener('timeupdate', function() {
+            st++;
+            if (st % 20 == 0) {
+                rst();
+            }
+        });
 
         Timer.stop(t);
     }
@@ -307,12 +316,12 @@ Are you still sure you want to add it?`)
 
     save() {
         let t = Timer.start('save');
-        DataLoader.set(
-            `albums~${this.profileManager.activeProfile}`,
+        DataLoader.setP(
+            'albums',
             this.fullAlbumExport()
         );
-        DataLoader.set(
-            `playlists~${this.profileManager.activeProfile}`,
+        DataLoader.setP(
+            'playlists',
             this.fullPlaylistExport()
         );
         Timer.stop(t);

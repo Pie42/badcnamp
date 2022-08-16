@@ -43,6 +43,7 @@ export default class PiPUI {
     }
 
     drawInfo(t) {
+        if (!this.playing) return;
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         this.ctx.fillRect(0, 350, this.size, 150);
         this.ctx.fillStyle = '#fff';
