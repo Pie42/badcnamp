@@ -91,6 +91,9 @@ export default class LibraryManager {
     }
 
     async play(track, index, scope) {
+        if (!track) {
+            return;
+        }
         this.playing = track;
         if (scope) {
             this.scope2.update(scope, index);

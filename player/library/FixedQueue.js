@@ -178,7 +178,9 @@ export default class FixedQueue {
     }
 
     updateTitle() {
-        document.title = `${this.library.playing.title} / ${this.library.playing.rawArtistString}`;
+        if (this.library.playing) {
+            document.title = `${this.library.playing.title} / ${this.library.playing.rawArtistString}`;
+        }
     }
 
     updateIndex() {
