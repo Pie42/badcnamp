@@ -39,6 +39,9 @@ export default class QueueUI {
 
     create() {
         this.queueDiv.innerHTML = '';
+        if (this.queue.length == 0) {
+            return;
+        }
         this.items = [];
         let index = this.scope.index,
             max,
