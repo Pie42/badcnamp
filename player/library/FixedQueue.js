@@ -69,8 +69,15 @@ export default class FixedQueue {
     }
 
     get nextTrack() {
-        return this.index < this.queue.length - 1 || this.notInQueue
+        /*return this.index < this.queue.length - 1 || this.notInQueue
             ? this.queue[this.index + 1 - this.notInQueue]
+            : undefined;*/
+        return this.nextN(1);
+    }
+
+    nextN(n) {
+        return this.index + n < this.queue.length + this.notInQueue
+            ? this.queue[this.index + n - this.notInQueue]
             : undefined;
     }
 
@@ -119,12 +126,20 @@ export default class FixedQueue {
             this.queueEnd++;
             this.queueEnd -= this.notInQueue;
         }
-        this.index++;
         this.index -= this.notInQueue;
         this.notInQueue = false;
-        if (this.index == this.queue.length) {
-            this.loop();
-        }
+        do {
+            this.index++;
+            if (this.index == this.queue.length) {
+                this.loop();
+                if (!this.queue.some((i) => i.album.status == 'ok')) {
+                    alert(
+                        'current queue cannot be played, it may have been deleted from bandcamp!'
+                    );
+                    break;
+                }
+            }
+        } while (this.queue[this.index].album.status == 'not-found');
         this.save();
         this.updateTitle();
         this.updateIndex();

@@ -230,12 +230,41 @@ export default class PlayerUI {
         return this.library.scope2.nextTrack;
     }
 
-    prepareNextTrack() {
-        let temp;
-        let nextTrack = this.library.scope2.nextTrack;
+    async prepareNextTrack() {
+        /*let nextTrack = this.library.scope2.nextTrack;
         if (isOutdated(nextTrack)) {
+            while (!fetched)
             this.library.refetch(nextTrack.album);
+        }*/
+        let successful = true;
+        for (let i = 1; ; i++) {
+            let nextTrack = this.library.scope2.nextN(i);
+            // nextN returns undefined at queue end
+            // (it can't shuffle or loop, and this prevents bad things from happening)
+            // this also happens to be the only failure condition that matters
+            if (!nextTrack) {
+                successful = false;
+                break;
+            }
+            // alternatively, if an album can't be found and was checked less than an hour ago,
+            // just skip it
+            if (
+                nextTrack.album.status == 'not-found' &&
+                Date.now() - nextTrack.album.lastChecked < 3600000
+            ) {
+                continue;
+            }
+            if (isOutdated(nextTrack)) {
+                let status = await this.library.refetch(nextTrack.album);
+                // status = 0 is the only one we should keep searching on
+                if (status) {
+                    break;
+                }
+            } else {
+                break;
+            }
         }
+        return successful;
     }
 
     prev() {

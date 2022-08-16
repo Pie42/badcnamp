@@ -6,4 +6,15 @@
         import initialise from './bootstrap.js';
         initialise();
     </script>
+<!--@build-template
+{<body>
+    <script>
+        %1
+        settings.path = '/';
+        initialise();
+    </script>
+    <style>
+        %{style.css}
+    </style>
+</body>}-->
 </body>

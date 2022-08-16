@@ -96,17 +96,44 @@ export default class LibraryManager {
             this.scope2.update(scope, index);
         }
         this.scope2.updateTitle();
-        if (isOutdated(track)) {
-            await this.refetch(track.album);
+        let status = 2;
+        if (isOutdated(track) || !track.file) {
+            status = await this.refetch(track.album);
         }
-        this.audio.src = track.file;
-        this.audio.currentTime = 0;
-        this.audio.play().catch(() => {});
+        switch (status) {
+            case 2:
+                this.audio.src = track.file;
+                this.audio.currentTime = 0;
+                this.audio.play().catch(() => {});
+                break;
+            // internet error, retry every 5 seconds
+            case 1:
+                setTimeout(this.play(track, index, scope), 5000);
+                break;
+            // uncaught 404 error, attempt to go to the next track
+            case 0:
+                let canPlay = await this.uimanager.playerui.prepareNextTrack();
+                if (canPlay) {
+                    this.uimanager.playerui.next();
+                }
+                break;
+        }
     }
 
     async refetch(album, reset = false) {
+        // 2 = successful, 1 = internet error / other misc error, 0 = not found
+        let successful = 2;
         await fetch(settings.path + album.link)
-            .then((i) => i.text(), this.fetchError)
+            .then((i) => {
+                if (i.ok) {
+                    return i.text();
+                } else if (i.status == 404) {
+                    album.status = 'not-found';
+                    album.lastChecked = Date.now();
+                    successful = 0;
+                    throw 'Not found error';
+                }
+            }, (e) => {this.fetchError(e, album)})
             .then((i) => {
                 let tralbumData = parseTralbumData(i),
                     trackInfo = tralbumData.trackinfo,
@@ -142,8 +169,8 @@ export default class LibraryManager {
                         );
                     }
                 }
-            }, this.fetchError);
-        return;
+            }, (e) => {this.fetchError(e, album)});
+        return successful;
     }
 
     async add(link, refresh = true) {
@@ -228,7 +255,11 @@ Are you still sure you want to add it?`)
             album.link,
             [
                 `${album.artist} - ${album.title}`,
-                album.tracks.map((i, j) => [i.rawArtistString, i.title, i.plays]),
+                album.tracks.map((i, j) => [
+                    i.rawArtistString,
+                    i.title,
+                    i.plays,
+                ]),
             ],
             album.tags,
         ];
@@ -362,7 +393,8 @@ Are you still sure you want to add it?`)
         this.playlists.push(p);
     }
 
-    fetchError(e) {
+    fetchError(e, album) {
+        //successful = 1;
         console.log(`album ${album.link} (${album.title} - ${album.rawArtistString}) could not be fetched
 ${e}`);
     }

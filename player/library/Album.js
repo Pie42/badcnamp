@@ -15,6 +15,12 @@ export default class Album {
         this.tracks = [];
         this.tags = data.tags;
         this.albumArtists = {};
+        // it's assumed that all albums are ok when they're loaded in.
+        // other possible values: not-found
+        this.status = 'ok';
+        // save when an album was last checked
+        // albums will only be checked an hour (or so) apart
+        this.lastChecked = 0;
         let albumGivenArtists = splitArtists(this.artist.toLocaleLowerCase());
         for (let albumGivenArtist of albumGivenArtists) {
             this.albumArtists[albumGivenArtist] = 1;
