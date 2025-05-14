@@ -4,5 +4,7 @@ export default class Tag {
         this.albums = [];
         this.artists = {};
         this.tracks = [];
+        this.plays = 0;
+        this.duration = 0;
     }
 }

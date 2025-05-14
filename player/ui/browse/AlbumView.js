@@ -1,4 +1,9 @@
-import { createP, createLongP, createTrackDiv } from '../../Util.js';
+import {
+    createP,
+    createLongP,
+    createTrackDiv,
+    createElement,
+} from '../../Util.js';
 import { UITagSection } from '../elements/UIElements.js';
 
 export default class AlbumView {
@@ -16,21 +21,29 @@ export default class AlbumView {
         this.cover.src = this.album.image;
 
         let albumLink = document.createElement('a');
-        albumLink.href = this.album.link;
+        albumLink.href = '#';
+        albumLink.onclick = () =>
+            this.manager.switchUI('bclabel', new URL(this.album.link).origin);
+        albumLink.title = 'View all albums by label';
         albumLink.appendChild(this.cover);
         this.div.appendChild(albumLink);
 
         let title = document.createElement('h1');
-        title.innerHTML = this.album.title;
+        title.innerText = this.album.title;
         this.div.appendChild(title);
 
+        let menu = createP(title, '\u2630', (e) => {
+            //☰
+            this.manager.albumMenu.switch(title, this.album);
+        });
+
         let artist = document.createElement('h3');
-        artist.innerHTML = this.album.artist;
+        artist.innerText = this.album.artist;
         let artistName = this.album.artist.toLocaleLowerCase();
         if (this.library.artists[artistName]) {
             artist.onclick = () => {
                 this.manager.switchUI('artist', artistName);
-            }
+            };
         } else {
             console.log(this.album.artist);
         }
@@ -48,8 +61,18 @@ export default class AlbumView {
             );
         }
 
+        if (this.album.hidden) {
+            createElement('p', this.div, {
+                innerText: `Plus ${this.album.hidden} tracks that can't be played`,
+            });
+        }
+
         createP(this.div, 'reset', () => {
             this.library.fix(this.album);
+        });
+
+        createP(this.div, 'refetch', () => {
+            this.library.refetch(this.album);
         });
 
         new UITagSection(this.div, this.tags, manager);

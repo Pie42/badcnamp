@@ -12,11 +12,11 @@ export default class ArtistView {
 
         this.div = document.createElement('div');
         let artistName = document.createElement('h1');
-        artistName.innerHTML = this.artist.rawName;
+        artistName.innerText = this.artist.rawName;
         this.div.appendChild(artistName);
 
         let albumHeader = document.createElement('h4');
-        albumHeader.innerHTML = 'Albums';
+        albumHeader.innerText = 'Albums';
         albumHeader.style.display = 'inline';
         this.div.appendChild(albumHeader);
         new UIShuffleButton(this.div, this.manager, () =>
@@ -48,13 +48,22 @@ export default class ArtistView {
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;`;
+            albumDiv.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                this.manager.albumMenu.switch(arrowP, i, {
+                    x: e.clientX,
+                    y: e.clientY,
+                });
+            });
             this.div.appendChild(albumDiv);
         }
 
         let tracks = sortArray(this.tracks, 'title');
         let trackHeader = document.createElement('h4');
-        trackHeader.innerHTML = 'Tracks';
+        trackHeader.innerText = 'Tracks';
+        trackHeader.style.display = 'inline';
         this.div.appendChild(trackHeader);
+        new UIShuffleButton(this.div, this.manager, () => this.tracks);
         for (let j in tracks) {
             let i = this.tracks[j];
             createTrackDiv(this.div, i.title, i, this.library, j, tracks);

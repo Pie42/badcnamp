@@ -1,6 +1,5 @@
 import settings from './constants/PlayerConstants.js';
 import Tag from './library/Tag.js';
-import BCTag from './ui/bcpages/BCTag.js';
 
 /**
  *
@@ -26,13 +25,13 @@ function createP(parentElement, innerText, onclick, classes = []) {
  * This function is mostly meant to be used for anything that isn't explicitly defined in
  * the program (and thus has an unknown length).
  * @param {HTMLElement} parentElement The element to put the new div in.
- * @param {String} innerHTML The text (or really anything) to put inside of the 'p' element.
+ * @param {String} innerText The text to put inside of the 'p' element.
  * @param {Function} onclick The function to call upon clicking the 'p' element.
  * @returns {HTMLDivElement} The div with the 'p' element in it.
  */
-function createLongP(parentElement, innerHTML, onclick) {
+function createLongP(parentElement, innerText, onclick) {
     let div = document.createElement('div'),
-        p = createP(div, innerHTML, onclick);
+        p = createP(div, innerText, onclick);
     p.classList.add('long-p');
     div.classList.add('long-div');
     parentElement.appendChild(div);
@@ -57,10 +56,10 @@ function createTrackDiv(
     let i = createLongP(trackDiv, name, (e) => {
         if (trackDiv.classList.contains('selected')) {
             library.uimanager.browseui.trackMenu.switch(menuP, track);
-            e.stopPropagation();
         } else {
             library.play(track, index, scope);
         }
+        e.stopPropagation();
     });
     trackDiv.onclick = i.firstChild.onclick;
 
@@ -69,6 +68,14 @@ function createTrackDiv(
     } else {
         i.firstChild.classList.add('track-p');
     }
+
+    let duration = createP(
+        trackDiv,
+        tformat(track.duration, track.duration),
+        trackDiv.onclick,
+        ['fancy-track-p']
+    );
+    duration.style.paddingRight = '8px';
 
     let menuP = createP(trackDiv, '\u22ee', (e) => {
         //let menuP = createP(trackDiv, '\u2630', (e) => {
@@ -87,7 +94,7 @@ function createTrackDiv(
     //i.style.display = 'inline';
     i.style.marginRight = '4px';
     menuP.style.paddingRight = '8px';
-    menuP.style.width = '10px';
+    menuP.style.minWidth = '12px';
     parent.appendChild(trackDiv);
 }
 
@@ -103,14 +110,15 @@ function parseFromDom(text) {
 
 //parsing strategy taken from https://stackoverflow.com/questions/1912501/unescape-html-entities-in-javascript/42254787#42254787
 function parseTralbumData(result) {
-    let tralbumData = result.match(/data-tralbum="(.+?\})"/)[1],
+    let tralbumData = result.match(/data-tralbum="(.+?\})"/s)[1],
         corrected = parseFromDom(tralbumData);
     return JSON.parse(corrected);
 }
 
 function parseTags(result) {
-    let tags = result.match(/"keywords":(\[.*?\])/)[1],
-        corrected = parseFromDom(tags);
+    let tags = result.match(/"keywords":(\[.*?\])/)?.[1];
+    if (!tags) return [];
+    let corrected = parseFromDom(tags);
     return JSON.parse(corrected).map((i) => i.toLocaleLowerCase());
 }
 
@@ -135,7 +143,23 @@ function parseTags(result) {
  * @returns {['' | RegExp, RegExp]} An array with the regular expressions to match with.
  */
 function doTheFunkyTitleThing(trackInfo) {
-    let titles = trackInfo.map((i) => i.title).join('\n'),
+    function removeGroups(string) {
+        let match = 1;
+        // having a while loop like this is dangerous but imo it's okay because the string is reduced every iteration
+        while (match) {
+            match = string.match(/\p{Ps}[^\p{Pe}\p{Ps}]+\p{Pe}/u)?.[0];
+            if (match) {
+                string = string.replace(match, '');
+            } else {
+                break;
+            }
+        }
+        return string;
+    }
+    // syntactically, any part of the title contained within parentheses, brackets,
+    // or any other grouping character shouldn't be used to separate the title from
+    // the artist
+    let titles = trackInfo.map((i) => removeGroups(i.title)).join('\n'),
         numbering = titles.match(
             /([\d\w\. ]+)(\d)([\. ]*)(?!\n)\D.+\n(\1(?!\2)\d\3)/
         ),
@@ -150,7 +174,7 @@ function doTheFunkyTitleThing(trackInfo) {
             /(.+)([^\p{L}\n \p{Pe}\p{Ps}\p{N}'.!?\-:,／])((?:.(?!\2))+)\n.+\2(?!\3)/iu
         )?.[2];
     }
-    let titlinging = new RegExp(`(.+?)(${titling}| - )(.+)`);
+    let titlinging = new RegExp(`(.+?)(${titling})(.+)`);
     return [rumbening, titlinging];
 }
 
@@ -180,7 +204,9 @@ function guessTheTitle(artist, title) {
 function splitArtists(artist) {
     try {
         let split = artist.split(/(?: vs | \& | feat\. | x |\, | \+ | ?\/ ?)/i);
-        split.splitters = artist.split(/( vs | \& | feat\. | x |\, | \+ | ?\/ ?)/i);
+        split.splitters = artist.split(
+            /( vs\.? | \& | feat\. | x |\, | \+ | ?\/ ?)/i
+        );
         return split;
     } catch (error) {
         return [artist];
@@ -195,7 +221,7 @@ function splitArtists(artist) {
 function isOutdated(track) {
     return (
         !track.file ||
-        track.file.match(/ts=(.+?)\&/)[1] * 1000 - Date.now() < 5000000
+        track.file.match(/ts=(.+?)\&/)[1] * 1000 - Date.now() < 5_000_000
     );
 }
 
@@ -249,22 +275,42 @@ async function upgradeLibrary(library, max = 0, dryRun = false) {
             tags: badcnamp.state.library.albums
                 .filter((i) => !i?.tags?.length)
                 .map((i) => i.id),
+            durations: badcnamp.state.library.albums
+                .filter((i) => i.tracks.some((j) => !j.duration))
+                .map((i) => i.id),
         },
         albumsToUpgrade = Array.from(new Set(Object.values(features).flat()));
     //console.log(features, max);
     if (dryRun) {
         for (let i in features) {
-            console.log(`will add ${i} to albums ${features[i]}`);
+            if (features[i].length) {
+                console.log(`will add ${i} to albums ${features[i]}`);
+            }
         }
     } else {
+        console.log(
+            'Exporting library. Please save this somewhere safe in case something breaks!'
+        );
+        console.log(badcnamp.export());
         //if (Object.values(features).some((i) => i)) {
         if (albumsToUpgrade.length) {
             let albums = albumsToUpgrade.map((i) => library.albums[i]);
             if (features.tags) {
                 library.tags = library?.tags || {};
             }
-            for (let i = 0; i < max || albums.length; i++) {
-                let album = albums[i];
+            if (max == 0) {
+                max = albums.length;
+            }
+            for (let i = 0; i < max && i < albums.length; i++) {
+                let album = albums[i],
+                    albumFeatures = {};
+                for (let feature in features) {
+                    albumFeatures[feature] = features[feature].includes(
+                        album.id
+                    );
+                }
+                // do an || of any features that require parsing everything
+                albumFeatures.mustParse = albumFeatures.durations;
                 await fetch(settings.path + album.link)
                     .then(
                         (result) => result.text(),
@@ -273,7 +319,7 @@ async function upgradeLibrary(library, max = 0, dryRun = false) {
                         }
                     )
                     .then((result) => {
-                        if (features.tags) {
+                        if (albumFeatures.tags) {
                             let tags = parseTags(result);
                             album.tags = tags;
                             for (let tag of tags) {
@@ -287,9 +333,43 @@ async function upgradeLibrary(library, max = 0, dryRun = false) {
                                 lTag.tracks.push(...album.tracks);
                             }
                         }
+                        if (albumFeatures.mustParse) {
+                            let tralbumData = parseTralbumData(result),
+                                trackInfo = tralbumData.trackinfo,
+                                [titleReplace, splitCharacter] =
+                                    doTheFunkyTitleThing(trackInfo),
+                                trackPointer = 0,
+                                tracks = album.tracks;
+                            for (let j of trackInfo) {
+                                let parsedTitle = j.title
+                                        .replace(titleReplace, '')
+                                        .match(splitCharacter),
+                                    trackArtist =
+                                        j.artist ||
+                                        (parsedTitle
+                                            ? parsedTitle[1]
+                                            : tralbumData.artist),
+                                    trackTitle = parsedTitle
+                                        ? parsedTitle[3]
+                                        : j.title.replace(titleReplace, '');
+                                // needs to have the ?. for if you delete the last track in an album
+                                if (
+                                    trackTitle ==
+                                        tracks?.[trackPointer]?.title &&
+                                    trackArtist ==
+                                        tracks?.[trackPointer]?.rawArtistString
+                                ) {
+                                    if (albumFeatures.durations) {
+                                        tracks[trackPointer].duration =
+                                            trackInfo[trackPointer].duration;
+                                    }
+                                    trackPointer++;
+                                }
+                            }
+                        }
                     })
-                    .catch(() => {
-                        console.log(album);
+                    .catch((e) => {
+                        console.log(album, e);
                     });
             }
         }
@@ -365,14 +445,15 @@ function filterArray(array, method, data) {
             break;
         default:
             try {
-                let fun;
-                if (data) {
+                let fun = Function('$', `return ${method}${data || ''}`);
+                /*if (data) {
                     fun = Function('i', `return i${method}i${data}`);
                 } else {
                     fun = Function('i', `return i${method}`);
-                }
+                }*/
                 filtered = filtered.filter(fun);
             } catch (e) {
+                console.log(e);
                 filtered = [];
             }
             break;
@@ -399,10 +480,14 @@ function accordion(headerText, size = 'h4') {
 
 function getLinkType(link) {
     let type;
+    if (!/https\:\/\//.test(link)) return false;
     if (link.match(/bandcamp\.com\/tag\//)) {
         type = 'tag';
-    } else {
+    } else if (/(album|track)/.test(link)) {
         type = 'album';
+    } else {
+        // could be band but is called this for consistancy
+        type = 'label';
     }
     return type;
 }
@@ -431,16 +516,16 @@ function getLinkType(link) {
 23 - 300x300
 24 - 300x300
 25 - 700x700
-26 - 800x600
-27 - 715x402
-28 - 768x432
-29 - 100x75
+26 - 800x600 (4:3)
+27 - 715x402 (715:402)
+28 - 768x432 (16:9)
+29 - 100x75 (4:3)
 31 - 1024x1024
-32 - 380x285
-33 - 368x276
-36 - 400x300
-37 - 168x126
-38 - 144x108
+32 - 380x285 (4:3)
+33 - 368x276 (4:3)
+36 - 400x300 (4:3)
+37 - 168x126 (4:3)
+38 - 144x108 (4:3)
 41 - 210x210
 42 - 50x50
 43 - 100x100
@@ -453,15 +538,15 @@ function getLinkType(link) {
 69 - 700x700
 70 - 270x270
 71 - 540x540
-100 - 975x180
+100 - 975x180 (65:12)
 101 - 90x90
-120 - 640x124
+120 - 640x124 (160:31)
 130 - 1500x1500
-140 - 60x45
-150 - 1280x720
-151 - 720x1280
-160 - 60x100
-161 - 40x80
+140 - 60x45 (4:3)
+150 - 1280x720 (16:9)
+151 - 720x1280 (9:16)
+160 - 60x100 (3:5)
+161 - 40x80 (1:2)
 165 - 210x210, has 'gift' label
 170 - 422x422
 171 - 646x646
@@ -474,13 +559,106 @@ function getLinkType(link) {
 205 - 240x240
 206 - 180x180
 207 - 120x120
-220 - 900x468
+220 - 900x468 (25:13)
 300 - 350x350, grayscale
-(extracted by a script that checked types up to 1000, there may be more)
+(extracted by a script that checked types up to 1000, but there may be more)
 */
+/**
+ *
+ * @param {String|Number} link The link to an image or the id of an image
+ * @param {Number} type An image type (see above)
+ * @returns {String} A link to an image of the given id and type
+ */
 function getImageType(link, type) {
-    let id = /^\d+$/.test(link) ? link : link.match(/a(\d+)_/)[1];
-    return `https://f4.bcbits.com/img/a${id}_${type}.jpg`;
+    let id = /^\d+$/.test(link) ? 'a' + link : link.match(/\/(\w?\d+)_/)[1];
+    return `https://f4.bcbits.com/img/${id}_${type}.jpg`;
+}
+
+/**
+ * Formats a time in seconds as a string.
+ * @param {Number} time Current time
+ * @param {Number} length Total length of the song (for choosing whether to include the hour digit)
+ * @returns {String} The formatted time
+ */
+function tformat(time, length) {
+    let hour = '',
+        minutes = ('0' + (((time / 60) | 0) % 60) + ':').slice(-3),
+        seconds = ('0' + (time % 60 | 0)).slice(-2);
+    if (length > 3600) {
+        hour = ((time / 3600) | 0) + ':';
+    }
+    return hour + minutes + seconds;
+}
+
+function getStyle(element) {
+    let oldStyle = element.style,
+        // this works to get the style string (see style variable above) from a CSSStyleDeclaration
+        actualOldStyle = [...oldStyle]
+            .map((i) => `${i}: ${oldStyle[i]}`)
+            .join('; ');
+    return actualOldStyle;
+}
+
+/**
+ * Easy one-stop function to create and set up an element or even trees of elements.
+ * @param {String} tag The type of element to create
+ * @param {HTMLElement} [parent] (optional) Parent element to add this one to
+ * @param {Object} [properties={}] Properties (e.g. innerHTML) to set on the element
+ * @param {Array<Object|HTMLElement>} [properties.children] Optional short-circuit to create nested element, but prevents returning them
+ * @param {String} properties.children[].tag Tag for the child
+ * @param {Object} properties.children[].properties Properties for the child
+ * @param {Function} [properties.oncreate] Optional function to run once the element has been fully created
+ * @param {Array<String>} [properties.classes] Classes to add to the created object
+ * @returns {HTMLElement} The created element
+ */
+function createElement(tag, parent, properties = {}) {
+    let element = document.createElement(tag),
+        oncreate;
+    if (parent) {
+        parent.append(element);
+    }
+    for (let i in properties) {
+        switch (i) {
+            case 'children':
+                for (let child of properties.children) {
+                    if (child instanceof HTMLElement) {
+                        element.append(child);
+                    } else {
+                        createElement(child.tag, element, child.properties || {});
+                    }
+                }
+                break;
+            // delay running the oncreate function until all properties have been initialized
+            case 'oncreate':
+                oncreate = properties.oncreate;
+                break;
+            case 'classes':
+                element.classList.add(...properties[i]);
+                break;
+            default:
+                element[i] = properties[i];
+        }
+    }
+    if (oncreate) {
+        oncreate(element);
+    }
+    return element;
+}
+
+/**
+ *
+ * @param {Number} seconds number of seconds to sleep
+ * @param {Function} [callback] (optional) callback to avoid having to use await
+ * @returns {Promise|undefined}
+ */
+function sleep(seconds, callback = null) {
+    if (callback) {
+        setTimeout(callback, seconds * 1000);
+    } else {
+        return new Promise((resolve) => {
+            setTimeout(resolve, seconds * 1000);
+        });
+    }
 }
 
 const stupidRegex =
@@ -505,4 +683,8 @@ export {
     accordion,
     getLinkType,
     getImageType,
+    tformat,
+    getStyle,
+    createElement,
+    sleep,
 };

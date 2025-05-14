@@ -4,7 +4,7 @@ import settings from "../constants/PlayerConstants.js";
 // (should be pretty easy, since i can just keep all of the methods the same and change the internals)
 export default class DataLoader {
     static init() {
-        this.namespace = settings.namespace + '-';
+        //this.namespace = settings.namespace + '-';
         this.profile = '';
         window.DataLoader = DataLoader;
         return;
@@ -44,5 +44,9 @@ export default class DataLoader {
 
     static setRawP(key, value) {
         this.setRaw(this.asProfile(key), value);
+    }
+
+    static get namespace() {
+        return settings.namespace + '-';
     }
 }

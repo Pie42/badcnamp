@@ -14,5 +14,7 @@ export default class Track {
         this.playlists = data.playlists || {};
         this.id = data.id;
         this.plays = data.plays || 0;
+        this.duration = data.duration || 0;
+        this.broken = false;
     }
 }

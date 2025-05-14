@@ -5,8 +5,9 @@ import {
     createP,
     filterArray,
 } from '../../Util.js';
+import { UIShuffleButton } from '../elements/UIElements.js';
 
-export default class SearchView {
+export default class LocalSearchView {
     constructor(manager, data) {
         this.manager = manager;
         this.library = this.manager.library;
@@ -29,12 +30,15 @@ export default class SearchView {
             match = string.replace('=', '');
             this.tracks = filterArray(this.library.tracks, match);
             this.albums = filterArray(this.library.albums, match);
-            this.artists = filterArray(Object.keys(this.library.artists), match);
+            this.artists = filterArray(
+                Object.keys(this.library.artists),
+                match
+            );
         } else {
             if (string.match(/^\/.+\/$/)) {
                 match = new RegExp(string.replace(/^\/(.+)\/$/, '$1'), 'i');
             } else {
-                match = string;
+                match = new RegExp(string.replaceAll(/([[\]().\\*+-])/g, '\\$1'), 'i');
             }
             this.tracks = filterArray(this.library.tracks, 'title', match);
             this.albums = filterArray(this.library.albums, 'title', match);
@@ -88,9 +92,9 @@ export default class SearchView {
 
     update() {
         window.history.replaceState(
-            { scroll: 0, type: 'search', id: this.rawSearch },
+            { scroll: 0, type: 'localsearch', id: this.rawSearch },
             '',
-            '?search,' + this.rawSearch
+            '?localsearch,' + this.rawSearch
         );
         this.div.innerHTML = '';
         let trackDiv = document.createElement('div'),
@@ -100,52 +104,59 @@ export default class SearchView {
             albumh3 = document.createElement('h3'),
             artisth3 = document.createElement('h3');
 
-        trackh3.innerHTML = 'Tracks';
-        albumh3.innerHTML = 'Albums';
-        artisth3.innerHTML = 'Artists';
+        trackh3.innerText = this.tracks.length ? 'Tracks' : 'No tracks found!';
+        albumh3.innerText = this.albums.length ? 'Albums' : 'No albums found!';
+        albumh3.style.display = 'inline';
+        artisth3.innerText = this.artists.length ? 'Artists' : 'No artists found!';
+        artisth3.style.display = 'inline';
 
         trackDiv.appendChild(trackh3);
+        if (this.tracks.length) {
+            //creating tracks
+            rateLimit(
+                (i) =>
+                    createTrackDiv(
+                        trackDiv,
+                        `${this.tracks[i].rawArtistString} - ${this.tracks[i].title}`,
+                        this.tracks[i],
+                        this.library,
+                        i,
+                        this.tracks,
+                        false
+                    ),
+                this.tracks.length
+            );
+        }
+
         albumDiv.appendChild(albumh3);
-        artistDiv.appendChild(artisth3);
+        if (this.albums.length) {
+            new UIShuffleButton(albumDiv, this.manager, () =>
+                this.albums.flatMap((i) => i.tracks)
+            );
 
-        //creating tracks
-        rateLimit(
-            (i) =>
-                createTrackDiv(
-                    trackDiv,
-                    `${this.tracks[i].rawArtistString} - ${this.tracks[i].title}`,
-                    this.tracks[i],
-                    this.library,
-                    i,
-                    this.tracks,
-                    false
-                ),
-            this.tracks.length
-        );
-
-        //creating albums
-        rateLimit((j) => {
-            let i = this.albums[j],
-                currentAlbumDiv = document.createElement('div'),
-                albumTitle = createLongP(
-                    currentAlbumDiv,
-                    `${i.artist} - ${i.title}`,
-                    () => {
-                        this.manager.switchUI('album', i);
-                    }
-                ),
-                arrowP = createP(currentAlbumDiv, ' >', () => {});
-            arrowP.style.display = 'flex';
-            arrowP.style.flexShrink = '0';
-            arrowP.style.padding = '8px';
-            albumTitle.firstChild.style = `
+            //creating albums
+            rateLimit((j) => {
+                let i = this.albums[j],
+                    currentAlbumDiv = document.createElement('div'),
+                    albumTitle = createLongP(
+                        currentAlbumDiv,
+                        `${i.artist} - ${i.title}`,
+                        () => {
+                            this.manager.switchUI('album', i);
+                        }
+                    ),
+                    arrowP = createP(currentAlbumDiv, ' >', () => {});
+                arrowP.style.display = 'flex';
+                arrowP.style.flexShrink = '0';
+                arrowP.style.padding = '8px';
+                albumTitle.firstChild.style = `
             vertical-align: middle;
             padding: 8px;
             display: block;
             padding-top: 0px;
             padding-bottom: 0px;
             line-height: 37px;`;
-            currentAlbumDiv.style = `
+                currentAlbumDiv.style = `
             border: solid;
             border-width: 1px;
             border-radius: 2px;
@@ -155,31 +166,38 @@ export default class SearchView {
             white-space: nowrap;
             text-overflow: ellipsis;
             max-height: 37;`;
-            albumDiv.appendChild(currentAlbumDiv);
-        }, this.albums.length);
+                albumDiv.appendChild(currentAlbumDiv);
+            }, this.albums.length);
+        }
 
-        rateLimit((j) => {
-            let i = this.artists[j],
-                currentArtistDiv = document.createElement('div'),
-                artistName = createLongP(
-                    currentArtistDiv,
-                    this.library.artists[i].rawName,
-                    () => {
-                        this.manager.switchUI('artist', i);
-                    }
-                ),
-                arrowP = createP(currentArtistDiv, ' >', () => {});
-            arrowP.style.display = 'flex';
-            arrowP.style.flexShrink = '0';
-            arrowP.style.padding = '8px';
-            artistName.firstChild.style = `
+        artistDiv.appendChild(artisth3);
+        if (this.artists.length) {
+            new UIShuffleButton(artistDiv, this.manager, () =>
+                this.artists.flatMap((i) => this.library.artists[i].tracks)
+            );
+
+            rateLimit((j) => {
+                let i = this.artists[j],
+                    currentArtistDiv = document.createElement('div'),
+                    artistName = createLongP(
+                        currentArtistDiv,
+                        this.library.artists[i].rawName,
+                        () => {
+                            this.manager.switchUI('artist', i);
+                        }
+                    ),
+                    arrowP = createP(currentArtistDiv, ' >', () => {});
+                arrowP.style.display = 'flex';
+                arrowP.style.flexShrink = '0';
+                arrowP.style.padding = '8px';
+                artistName.firstChild.style = `
             vertical-align: middle;
             padding: 8px;
             display: block;
             padding-top: 0px;
             padding-bottom: 0px;
             line-height: 37px;`;
-            currentArtistDiv.style = `
+                currentArtistDiv.style = `
     border: solid;
     border-width: 1px;
     border-radius: 2px;
@@ -189,8 +207,10 @@ export default class SearchView {
     white-space: nowrap;
     text-overflow: ellipsis;
     max-height: 37;`;
-            artistDiv.appendChild(currentArtistDiv);
-        }, this.artists.length);
+                artistDiv.appendChild(currentArtistDiv);
+            }, this.artists.length);
+        }
+
         this.div.appendChild(artistDiv);
         this.div.appendChild(albumDiv);
         this.div.appendChild(trackDiv);

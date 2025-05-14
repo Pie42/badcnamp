@@ -3,7 +3,10 @@ export default class ScrobbleFilter {
         this.field = field;
         this.search = search;
         this.replace = replace;
+        this.filters.push(this);
     }
+
+    static filters = [];
 
     static replace(filter, trackData) {
         /*trackData[filter.field] = trackData[filter.field].replaceAll(
@@ -14,10 +17,8 @@ export default class ScrobbleFilter {
             filter.search,
             filter.replace
         );
-        return [
-            !(newField == trackData[filter.field]),
-            (trackData[filter.field] = newField),
-        ][0];
+        trackData[filter.field] = newField;
+        return !(newField == trackData[filter.field]);
     }
 
     static replaceList(filters, trackData, replaceOne = false) {

@@ -16,6 +16,9 @@ export default class FixedQueue {
 
         // a toggle for when playing songs that aren't actually in the queue (e.g. from a bctag)
         this.notInQueue = false;
+
+        // allows for the queue to be 'shuffled' enough to get the first song in the next loop
+        this.newStart = undefined;
     }
 
     shuffle(startingIndex) {
@@ -37,6 +40,7 @@ export default class FixedQueue {
             this.queue[i] = k;
         }
         this.index = 0;
+        this.newStart = undefined;
     }
 
     appendToShuffle(tracks) {
@@ -89,14 +93,17 @@ export default class FixedQueue {
         this.queue.splice(this.index + 1, 0, ...tracks);
         this.queueEnd += tracks.length;
         this.save();
-        this.updateQueue();
+        this.updateQueue({
+            add: { start: this.index + 1, end: this.index + 2 },
+        });
     }
 
     addToQueue(tracks) {
-        this.queue.splice(this.queueEnd + 1, 0, ...tracks);
+        let start = this.queueEnd + 1;
+        this.queue.splice(start, 0, ...tracks);
         this.queueEnd += tracks.length;
         this.save();
-        this.updateQueue();
+        this.updateQueue({ add: { start, end: this.queueEnd } });
     }
 
     loop() {
@@ -139,7 +146,7 @@ export default class FixedQueue {
                     break;
                 }
             }
-        } while (this.queue[this.index].album.status == 'not-found');
+        } while (!this.queue[this.index].album.ok);
         this.save();
         this.updateTitle();
         this.updateIndex();
@@ -160,14 +167,23 @@ export default class FixedQueue {
     }
 
     save() {
-        let queue = this.queue.map((i) => [i.album.id, i.id]);
+        let index = this.index,
+            queue = this.queue
+                .map((i, j) => {
+                    if (i.album.temporary) {
+                        if (j < this.index) index--;
+                        return undefined;
+                    }
+                    return [i.album.id, i.id];
+                })
+                .filter((i) => i);
         DataLoader.setP('queue', queue);
-        DataLoader.setRawP('index', this.index);
+        DataLoader.setRawP('index', index);
     }
 
     load() {
         let queue = DataLoader.getP('queue');
-        if (queue) {
+        if (queue.length) {
             this.queue = queue.map(
                 (i) => this.library.albums[i[0]].tracks[i[1]]
             );
@@ -175,6 +191,9 @@ export default class FixedQueue {
             this.updateQueue();
             return true;
         }
+        this.queue = [];
+        this.index = 0;
+        this.queueEmpty();
         return false;
     }
 
@@ -191,6 +210,11 @@ export default class FixedQueue {
 
     updateQueue() {
         let event = new CustomEvent('queuechange');
+        document.dispatchEvent(event);
+    }
+
+    queueEmpty() {
+        let event = new CustomEvent('queueempty');
         document.dispatchEvent(event);
     }
 }
