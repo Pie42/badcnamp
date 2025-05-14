@@ -53,6 +53,7 @@ export default class FixedQueue {
     }
 
     update(queue, index) {
+        index = index || queue.indexOf(this.playing);
         this.queue = [...queue];
         switch (this.mode) {
             case 'shuffle':

@@ -119,6 +119,7 @@ export default class LibraryManager {
         if (!track) {
             return;
         }
+        let same = this.playing == track;
         this.playing = track;
         if (scope) {
             this.scope2.update(scope, index);
@@ -131,6 +132,7 @@ export default class LibraryManager {
         }
         switch (status) {
             case 2:
+                if (same) break;
                 this.audio.src = track.file;
                 this.audio.currentTime = 0;
                 this.audio.play().catch((e) => {});
