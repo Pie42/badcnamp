@@ -5,6 +5,7 @@ import {
     sortArray,
     rateLimit,
     accordion,
+    createElement,
 } from '../../Util.js';
 
 export default class TagView {
@@ -12,14 +13,38 @@ export default class TagView {
         this.manager = manager;
         this.library = this.manager.library;
         this.tag = this.library.tags[data];
+        if (!this.tag) {
+            this.manager.switchUI('bctag', data, false);
+            createElement('h4', undefined, {
+                innerText:
+                    'Tag not found in library, so switching to bandcamp automatically!',
+                style: 'display: block',
+                oncreate: (e) => {
+                    this.manager.div.insertBefore(
+                        e,
+                        this.manager.div.children[2]
+                    );
+                    setTimeout(() => this.manager.div.removeChild(e), 5000);
+                },
+            });
+            this.div = createElement('div');
+            return;
+        }
         this.albums = this.tag.albums;
         this.tracks = this.tag.tracks;
         this.artists = this.tag.artists;
 
         this.div = document.createElement('div');
         let tagName = document.createElement('h1');
-        tagName.innerHTML = this.tag.name;
+        tagName.innerText = this.tag.name;
         this.div.appendChild(tagName);
+
+        /*let toBandcamp = document.createElement('h2');
+        toBandcamp.innerText = '(view on bandcamp)';
+        this.div.appendChild(toBandcamp);*/
+        let toBandcamp = createP(this.div, '(view on bandcamp)', () => {
+            manager.switchUI('bctag', data);
+        });
 
         let artists = sortArray(Object.keys(this.artists), 'string'),
             artistsAccordion = accordion(`Artists (${artists.length})`),

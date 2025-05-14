@@ -1,3 +1,5 @@
+import { tformat } from "../../Util.js";
+
 //this makes everything work with the bugs listener on webscrobbler
 export default class ScrobbleUI {
     constructor(player) {
@@ -54,17 +56,17 @@ export default class ScrobbleUI {
     // this is just a good thing to listen for for a song having loaded
     loadedmetadata() {
         let playing = this.player.library.playing;
-        this.title.innerHTML = playing.title;
-        this.artist.innerHTML = playing.rawArtistString;
+        this.title.innerText = playing.title;
+        this.artist.innerText = playing.rawArtistString;
         this.album.setAttribute('title', playing.album.title);
-        this.duration.innerHTML = this.tformat(
+        this.duration.innerText = tformat(
             this.player.audio.duration,
             this.player.audio.duration
         );
     }
 
     timeupdate() {
-        this.cTime.innerHTML = this.player.tformat(
+        this.cTime.innerText = tformat(
             this.player.audio.currentTime,
             this.player.audio.duration
         );
@@ -77,21 +79,5 @@ export default class ScrobbleUI {
         for (let i of this.events) {
             this.player.audio.addEventListener(i, this[i].bind(this));
         }
-    }
-
-    /**
-     * Formats a time in seconds as a string.
-     * @param {Number} t Current time
-     * @param {Number} l Total length of the song (for choosing whether to include the hour digit)
-     * @returns {String} The formatted time
-     */
-    tformat(t, l) {
-        let hr = '',
-            mn = ('0' + (((t / 60) | 0) % 60) + ':').slice(-3),
-            sc = ('0' + (t % 60 | 0)).slice(-2);
-        if (l > 3600) {
-            hr = ('0' + ((t / 3600) | 0) + ':').slice(-3);
-        }
-        return hr + mn + sc;
     }
 }

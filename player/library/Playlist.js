@@ -1,21 +1,35 @@
+import { getImageType } from '../Util.js';
+
 export default class Playlist {
     constructor(name, image = '', tracks = []) {
         this.name = name;
         this.tracks = tracks;
+        // might change these back if using getters causes a lot of lag
+        //this.plays = this.tracks.reduce((a, b) => a + b.plays, 0);
+        //this.duration = this.tracks.reduce((a, b) => a + b.duration, 0);
         this.image = image;
         this.id = undefined;
         this.canvas = document.createElement('canvas');
         //album covers are 1200 pixels wide
         this.canvas.width = this.canvas.height = 1200;
         this.hasImage = false;
-        this.createImage();
+        this.createPlaceholder();
     }
 
-    createImage() {
+    createPlaceholder() {
         let ctx = this.canvas.getContext('2d'),
             cw = this.canvas.width;
         ctx.fillStyle = '#080c0c';
         ctx.fillRect(0, 0, cw, cw);
+        this.loadAll([getImageType(this.tracks[0].album.image, 22)], (images) =>
+            this.drawOntoCanvas(ctx, images[0], cw)
+        );
+    }
+
+    createImage() {
+        if (this.hasImage) return;
+        let ctx = this.canvas.getContext('2d'),
+            cw = this.canvas.width;
 
         if (this.image) {
             let img = document.createElement('img');
@@ -32,10 +46,10 @@ export default class Playlist {
                         : prev;
                 }, []);
                 this.loadAll(
-                    uniques.slice(0, 4).map((i) => i.album.image),
-                    (images) => this.fancyAlbumCover(ctx, cw, images)
-                    /*uniques.map((i) => i.album.image),
-                    (images) => this.fancierAlbumCover(ctx, cw, images)*/
+                    /*uniques.slice(0, 4).map((i) => i.album.image),
+                    (images) => this.fancyAlbumCover(ctx, cw, images)*/
+                    uniques.map((i) => getImageType(i.album.image, 15)),
+                    (images) => this.fancierAlbumCover(ctx, cw, images)
                 );
             }
         }
@@ -87,6 +101,8 @@ export default class Playlist {
      * @returns
      */
     fancyAlbumCover(ctx, cw, images) {
+        ctx.fillStyle = '#080c0c';
+        ctx.fillRect(0, 0, cw, cw);
         if (images.length == 1) {
             this.drawOntoCanvas(ctx, images[0], cw);
             return;
@@ -102,12 +118,18 @@ export default class Playlist {
             [0.5, 0],
             [0, 0.5],
         ];
-        while (images.length > 0) {
+        while (images.length > 0 && offsets.length > 0) {
             this.drawOntoCanvas(ctx, images.shift(), cw, 0.5, offsets.shift());
         }
+        this.hasImage = true;
     }
 
     fancierAlbumCover(ctx, cw, images) {
+        // assume something has gone poorly (ie internet disconnected, etc.)
+        if (!images.length) return;
+
+        ctx.fillStyle = '#080c0c';
+        ctx.fillRect(0, 0, cw, cw);
         ctx.globalAlpha = 0.4;
         this.drawOntoCanvas(ctx, images[0], cw);
         ctx.globalAlpha = 1.0;
@@ -146,6 +168,7 @@ export default class Playlist {
                 offsets.shift()
             );
         }
+        this.hasImage = true;
     }
 
     /**
@@ -168,11 +191,27 @@ export default class Playlist {
             }
         }
 
+        function onerror() {
+            num--;
+            if (loaded == num) {
+                callback(images);
+            }
+        }
+
         for (let i of links) {
             let img = document.createElement('img');
             img.src = i;
             img.onload = onload;
+            img.onerror = onerror;
             images.push(img);
         }
+    }
+
+    get plays() {
+        return this.tracks.reduce((a, b) => a + b.plays, 0);
+    }
+
+    get duration() {
+        return this.tracks.reduce((a, b) => a + b.duration, 0);
     }
 }

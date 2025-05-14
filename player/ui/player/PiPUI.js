@@ -1,3 +1,5 @@
+import { tformat } from '../../Util.js';
+
 export default class PiPUI {
     constructor(player) {
         this.player = player;
@@ -26,20 +28,31 @@ export default class PiPUI {
         this.artistWidth = 0;
         this.durationWidth = 0;
 
+        // firefox doesn't have the picture-in-picture api
+        // so we show the video element (so the user can manually pip it)
+        this.rendering = !'pictureInPictureEnabled' in document;
+
         this.div.appendChild(this.canvas);
         this.div.appendChild(this.video);
 
-        this.events = ['timeupdate', 'loadedmetadata', 'pause'];
+        this.events = ['timeupdate', 'loadedmetadata', 'pause', 'play'];
+        this.videoEvents = ['enterpictureinpicture', 'leavepictureinpicture'];
         this.playing = undefined;
+
+        this.videoIsPausing = false;
+        this.audioIsPlaying = false;
+        this.actionIsFake = false;
     }
 
     timeupdate() {
+        if (!this.rendering) return;
         if (this.playing) {
             this.ctx.drawImage(this.player.cover, 0, 0, this.size, this.size);
             this.drawInfo(this.player.audio.currentTime);
         } else {
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         }
+        this.canvasStream.requestFrame?.();
     }
 
     drawInfo(t) {
@@ -62,18 +75,12 @@ export default class PiPUI {
         );
         this.ctx.font = '30px sans-serif';
         this.ctx.fillText(
-            this.tformat(
-                this.player.audio.currentTime,
-                this.player.audio.duration
-            ),
+            tformat(this.player.audio.currentTime, this.player.audio.duration),
             10,
             457
         );
         this.ctx.fillText(
-            this.tformat(
-                this.player.audio.duration,
-                this.player.audio.duration
-            ),
+            tformat(this.player.audio.duration, this.player.audio.duration),
             this.canvas.width - this.durationWidth - 10,
             457
         );
@@ -106,12 +113,13 @@ export default class PiPUI {
         ).width;
         this.ctx.font = '30px sans-serif';
         this.durationWidth = this.ctx.measureText(
-            this.tformat(this.player.audio.duration, this.player.audio.duration)
+            tformat(this.player.audio.duration, this.player.audio.duration)
         ).width;
         this.pause();
     }
 
     pause() {
+        console.log('pause');
         this.ctx.drawImage(this.player.cover, 0, 0, this.size, this.size);
         this.drawInfo(0);
         this.ctx.fillStyle = 'rgba(255, 255, 255)';
@@ -129,6 +137,65 @@ export default class PiPUI {
             (2 * this.size) / 3
         );
         this.ctx.globalAlpha = 1;
+        this.canvasStream.requestFrame?.();
+        let video = this.video;
+        video.pause();
+        //setTimeout(this.video.pause(), 100);
+    }
+
+    play() {
+        console.log('play pressed');
+        this.audioIsPlaying = true;
+        this.video.play();
+    }
+
+    enterpictureinpicture() {
+        this.rendering = true;
+        this.player.setActionHandlers();
+        //this.drawInfo(this.player.audio.currentTime);
+        this.timeupdate();
+    }
+
+    leavepictureinpicture() {
+        this.timeupdate();
+        this.rendering = false;
+        this.player.setActionHandlers();
+    }
+
+    pip() {
+        if (document.pictureInPictureElement) {
+            document.exitPictureInPicture();
+        } else if (document.pictureInPictureEnabled) {
+            this.video.requestPictureInPicture();
+            this.player.setActionHandlers();
+        }
+    }
+
+    async videoPause() {
+        console.log('video pause');
+        if (this.videoIsPausing) {
+            this.videoIsPausing = false;
+            return;
+        }
+        this.videoIsPausing = true;
+        await this.video.play();
+        !this.player.audio.paused && this.player.audio.pause();
+        setTimeout(async () => {await this.video.pause()}, 100);
+    }
+
+    videoPlay() {
+        console.log('video play');
+        //console.log(this.videoIsPausing, this.video.paused);
+        if (this.audioIsPlaying) {
+            this.audioIsPlaying = false;
+            return;
+        }
+        if (this.videoIsPausing) {
+            console.log('video is still pausing, prease hab patiensu');
+            //this.videoIsPausing = false;
+            return;
+        }
+        this.player.audio.play();
     }
 
     /**
@@ -138,6 +205,11 @@ export default class PiPUI {
         for (let i of this.events) {
             this.player.audio.addEventListener(i, this[i].bind(this));
         }
+        for (let i of this.videoEvents) {
+            this.video.addEventListener(i, this[i].bind(this));
+        }
+        //this.video.addEventListener('pause', this.videoPause.bind(this));
+        //this.video.addEventListener('play', this.videoPlay.bind(this));
         //this.timeupdate();
         this.stream = this.canvas.captureStream();
         /**
@@ -145,21 +217,5 @@ export default class PiPUI {
          */
         this.canvasStream = this.stream.getTracks()[0];
         this.video.srcObject = this.stream;
-    }
-
-    /**
-     * Formats a time in seconds as a string.
-     * @param {Number} t Current time
-     * @param {Number} l Total length of the song (for choosing whether to include the hour digit)
-     * @returns {String} The formatted time
-     */
-    tformat(t, l) {
-        let hr = '',
-            mn = ('0' + (((t / 60) | 0) % 60) + ':').slice(-3),
-            sc = ('0' + (t % 60 | 0)).slice(-2);
-        if (l > 3600) {
-            hr = ('0' + ((t / 3600) | 0) + ':').slice(-3);
-        }
-        return hr + mn + sc;
     }
 }

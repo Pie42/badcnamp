@@ -5,17 +5,20 @@ import { createP, getLinkType } from '../Util.js';
 import TracksView from './browse/TracksView.js';
 import ArtistsView from './browse/ArtistsView.js';
 import ArtistView from './browse/ArtistView.js';
-import BCTag from './bcpages/BCTag.js';
+import BCTagView from './bcpages/BCTagView.js';
 import PlaylistsView from './browse/PlaylistsView.js';
 import PlaylistView from './browse/PlaylistView.js';
 import TrackMenu from './menu/TrackMenu.js';
 import AlbumMenu from './menu/AlbumMenu.js';
-import SearchView from './browse/SearchView.js';
+import LocalSearchView from './browse/LocalSearchView.js';
 import Timer from '../Timer.js';
 import TagsView from './browse/TagsView.js';
 import TagView from './browse/TagView.js';
 import { UITab } from './elements/UIElements.js';
 import RemoteAlbumMenu from './menu/RemoteAlbumMenu.js';
+import BCLabelView from './bcpages/BCLabelView.js';
+import RemoteAlbum from './bcpages/RemoteAlbum.js';
+import SettingsView from './browse/SettingsView.js';
 
 export default class BrowseUI {
     constructor(library) {
@@ -31,13 +34,27 @@ export default class BrowseUI {
             albums: AlbumsView,
             artist: ArtistView,
             artists: ArtistsView,
-            bctag: BCTag,
+            // a remotealbum can be loaded with the default view, but needs
+            // separate handling for setting document.title / retrieving from history
+            bcalbum: AlbumView,
+            bclabel: BCLabelView,
+            bctag: BCTagView,
             playlist: PlaylistView,
             playlists: PlaylistsView,
-            search: SearchView,
+            localsearch: LocalSearchView,
+            settings: SettingsView,
             tag: TagView,
             tags: TagsView,
             tracks: TracksView,
+        };
+        this.menuItemsToDisable = {
+            album: {
+                track: ['album'],
+            },
+            bcalbum: {
+                track: ['album', 'playlist', 'edit', 'delete'],
+                album: ['playlist', 'delete'],
+            },
         };
         this.tabs = ['artists', 'albums', 'tracks', 'tags', 'playlists'];
         this.ui = undefined;
@@ -51,12 +68,13 @@ export default class BrowseUI {
         this.searchInterval = 500;
 
         this.sort = 'title';
+        this.current = [];
 
         // feel free to replace this with whatever if you don't like it (including a getter)
         this.titleString = ' - badcnamp';
         this.title = '';
 
-        this.remoteCache = { tags: {}, artists: {} };
+        this.remoteCache = { tags: {}, labels: {} };
 
         this.selectedTab = undefined;
     }
@@ -66,12 +84,23 @@ export default class BrowseUI {
             this.setupHistory();
             let search = window.location.search.substring(1).split(/,(.+)/);
             this.switchFromHistory(search[0], search?.[1]);
+            //document.title = this.title;
         } else {
             for (let i of this.div.children) {
                 i.remove();
             }
             delete this.ui;
+            this.enableMenus();
+            if (this.menuItemsToDisable[this.uiview]) {
+                let toDisable = this.menuItemsToDisable[this.uiview];
+                for (let i in toDisable) {
+                    this[i + 'Menu'].disable(toDisable[i]);
+                }
+            }
+            // this enables automatic redirects (e.g. for when a tag isn't found in the library)
+            let uiview = this.uiview;
             this.ui = new this.views[this.uiview](this, data);
+            if (uiview != this.uiview) return;
             this.div.innerHTML = '';
             this.div.appendChild(this.ui.div);
             this.createTabs();
@@ -80,22 +109,27 @@ export default class BrowseUI {
     }
 
     switchUI(newUI, data = null, add = true) {
+        // early exit for when it's just the same thing as before
+        if (add && newUI == this.current[0] && data == this.current[1]) {
+            return;
+        }
+        this.current = [newUI, data];
         let t = Timer.start('UI switch to ' + newUI);
         let state = history.state;
         if (state) {
             state.scroll = this.div.scrollTop;
             history.replaceState(state, '');
         }
-        if (add) {
-            this.addToHistory(newUI, data);
-        }
+        this.addToHistory(newUI, data, !add);
         this.history.push([newUI, data, this.div.scrollTop]);
         this.uiview = newUI;
         DataLoader.setRaw('uiview', newUI);
         this.create(data, false);
-        this.trackMenu.switch();
-        this.albumMenu.switch();
+        this.trackMenu.close();
+        this.albumMenu.close();
         this.selectTab(newUI);
+        if (this.playerui.audio.paused || !this.playerui.audio.src)
+            document.title = this.title;
         Timer.stop(t);
         return;
     }
@@ -107,16 +141,19 @@ export default class BrowseUI {
             profileSelect = document.createElement('select'),
             search = document.createElement('input');
         function add() {
-            switch (getLinkType(input.value)) {
+            let link = input.value.replace(/\?.*$/, '');
+            switch (getLinkType(link)) {
                 case 'album':
-                    this.library.add(input.value);
+                    this.library.add(link);
                     break;
                 case 'tag':
                     this.switchUI(
                         'bctag',
-                        input.value.match(/\/tag\/([a-zA-Z\-]+)/)[1]
+                        link.match(/\/tag\/([a-zA-Z\-]+)/)[1]
                     );
                     break;
+                case 'label':
+                    this.switchUI('bclabel', link);
             }
             input.value = '';
         }
@@ -130,12 +167,12 @@ export default class BrowseUI {
         addButton.innerHTML = 'add!';
         for (let i of this.library.profileManager.profiles) {
             let profile = document.createElement('option');
-            profile.innerHTML = i;
+            profile.innerText = i;
             profileSelect.appendChild(profile);
         }
 
         let newProfileOption = document.createElement('option');
-        newProfileOption.innerHTML = 'New Profile...';
+        newProfileOption.innerText = 'New Profile...';
         profileSelect.appendChild(newProfileOption);
         profileSelect.selectedIndex =
             this.library.profileManager.activeProfileIndex;
@@ -163,9 +200,9 @@ export default class BrowseUI {
 
         search.addEventListener('keyup', async () => {
             if (search.value != '') {
-                if (this.uiview != 'search') {
+                if (this.uiview != 'localsearch') {
                     let value = search.value;
-                    await this.switchUI('search');
+                    await this.switchUI('localsearch');
                     search = this.div.children[0].children[3];
                     search.value = value;
                     search.focus();
@@ -188,6 +225,9 @@ export default class BrowseUI {
                 }
             }
         });
+        if (this.current[0] == 'localsearch') {
+            search.value = this.current[1];
+        }
         inputDiv.appendChild(input);
         inputDiv.appendChild(addButton);
         inputDiv.appendChild(profileSelect);
@@ -234,7 +274,10 @@ export default class BrowseUI {
                 this.create();
             }
         } else {
-            this.create(this.history?.[this.history.length - 1]?.[1] || {});
+            this.create(
+                this.history?.[this.history.length - 1]?.[1] || {},
+                false
+            );
         }
     }
 
@@ -244,7 +287,10 @@ export default class BrowseUI {
             if (state) {
                 this.switchFromHistory(state?.type, state?.id, state?.scroll);
             } else {
-                this.create();
+                // this is a duplicate of create with no input, but it avoids
+                // the problem of duplicating this event listener
+                let search = window.location.search.substring(1).split(/,(.+)/);
+                this.switchFromHistory(search[0], search?.[1]);
             }
         });
     }
@@ -259,45 +305,59 @@ export default class BrowseUI {
             case 'artists':
             case 'playlists':
             case 'tags':
+            case 'settings':
                 this.title = type;
-                await this.switchUI(type, null, false);
+                this.switchUI(type, null, false);
                 break;
             case 'album':
                 let album = this.library.albums[id];
                 this.title = album.title;
-                await this.switchUI('album', album, false);
+                this.switchUI('album', album, false);
                 break;
             case 'artist':
                 this.title = this.library.artists[id].rawName;
-                await this.switchUI(type, id, false);
+                this.switchUI(type, id, false);
                 break;
             case 'playlist':
                 let playlist = this.library.playlists[id];
                 this.title = playlist.name;
-                await this.switchUI(type, playlist, false);
+                this.switchUI(type, playlist, false);
                 break;
-            case 'search':
+            case 'localsearch':
                 this.title = 'Search';
-                await this.switchUI('search', id, false);
+                this.switchUI('localsearch', id, false);
                 break;
             case 'tag':
                 this.title = id;
-                await this.switchUI('tag', id, false);
+                this.switchUI('tag', id, false);
                 break;
             case 'bctag':
                 this.title = `${id} on bandcamp`;
-                await this.switchUI('bctag', id, false);
+                this.switchUI('bctag', id, false);
+                break;
+            case 'bclabel':
+                this.title = id;
+                this.switchUI('bclabel', `https://${id}/`, false);
+                break;
+            case 'bcalbum':
+                this.title = id;
+                //this.title = `${id.artist} - ${id.title} on bandcamp`;
+                this.switchUI(
+                    'bcalbum',
+                    await RemoteAlbum.fromLink(id, this.library),
+                    false
+                );
                 break;
             default:
                 console.warn(`Failed to switch on type: ${type}, id: ${id}`);
-                await this.switchUI('albums');
+                this.switchUI('albums');
                 break;
         }
         this.title += this.titleString;
         this.scroll(scroll || 0);
     }
 
-    addToHistory(type, data) {
+    addToHistory(type, data, replace = false) {
         let state = { scroll: 0, type: type },
             search = `?${type}`;
         switch (type) {
@@ -325,11 +385,33 @@ export default class BrowseUI {
                 state.id = data;
                 search += `,${data}`;
                 break;
+            case 'bclabel':
+                this.title = data;
+                state.id = data.match('(?:https://)?(.+?)(?:/|$)')[1];
+                search += `,${state.id}`;
+                break;
+            case 'bcalbum':
+                //await data;
+                //this.title = data.link;
+                this.title = `${data.title} on bandcamp`;
+                state.id = data.link;
+                search += `,${state.id}`;
+                break;
             default:
                 this.title = type;
                 break;
         }
         this.title += this.titleString;
-        window.history.pushState(state, type, search);
+        if (replace) {
+            window.history.replaceState(state, type, search);
+        } else {
+            window.history.pushState(state, type, search);
+        }
+    }
+
+    enableMenus() {
+        this.trackMenu.enableAll();
+        this.albumMenu.enableAll();
+        this.remoteAlbumMenu.enableAll();
     }
 }

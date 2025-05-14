@@ -18,6 +18,17 @@ export default class MenuButton {
             ['menu-button']
         );
         this.onclick = onclick;
+        this.enabled = true;
         parent.appendChild(this.div);
+    }
+
+    disable() {
+        this.div.style.display = 'none';
+        this.enabled = false;
+    }
+
+    enable() {
+        this.div.style.display = 'block';
+        this.enabled = true;
     }
 }

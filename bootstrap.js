@@ -18,4 +18,10 @@ export default function initialise() {
         upgradeLibrary(badcnamp.state.library, max, dryRun);
     };
     window.badcnamp = badcnamp;
+
+    window.addEventListener('load', () => {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    });
 }
