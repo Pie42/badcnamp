@@ -1,4 +1,4 @@
-import { createP, createIcon, iconLink } from '../../Util.js';
+import { createIcon, iconLink } from '../../Util.js';
 
 export default class ControlsUI {
     constructor(player, includePlay = false) {

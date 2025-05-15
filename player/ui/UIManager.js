@@ -1,6 +1,7 @@
 import BrowseUI from "./BrowseUI.js";
 import PlayerUI from "./PlayerUI.js";
 // types
+// eslint-disable-next-line no-unused-vars
 import LibraryManager from "../library/LibraryManager.js";
 
 export default class UIManager {

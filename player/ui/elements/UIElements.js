@@ -13,7 +13,7 @@ class UITab {
 }
 
 class UITrack {
-    constructor(track, j) {}
+    constructor() {}
 }
 
 class UIAlbum {
@@ -92,7 +92,7 @@ class UIHeader {
 }
 
 class UIRemoteAlbum {
-    constructor(album, manager, playable = true) {
+    constructor(album, manager) {
         this.div = document.createElement('div');
         this.div.style.display = 'inline';
         this.div.style.position = 'relative';
@@ -262,8 +262,7 @@ class UIQueueItem {
 }
 
 function uiQueueDropTarget(ui, forItem) {
-    let isInside = false,
-        div = createElement('div', null, {
+    let div = createElement('div', null, {
             ondragenter: (e) => {
                 if (e.dataTransfer.types.includes('application/x-queue-data')) {
                     //console.log(e, e.fromElement);
@@ -287,7 +286,6 @@ function uiQueueDropTarget(ui, forItem) {
             ondragover: (e) => e.preventDefault(),
             ondragleave: (e) => {
                 e.preventDefault();
-                isInside = false;
                 div.style.height = '0px';
                 //setTimeout(() => isInside || (div.style.height = '0px'), 20);
             },
@@ -304,7 +302,6 @@ function uiQueueDropTarget(ui, forItem) {
                         e.dataTransfer.getData('application/x-queue-data')
                     ),
                     index = data[0],
-                    elementIndex = data[1],
                     newIndex = ui.items.indexOf(forItem),
                     queueIndex = ui.scope.index,
                     item = ui.items[index];

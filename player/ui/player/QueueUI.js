@@ -1,6 +1,7 @@
 import { createP, rateLimit, tformat } from '../../Util.js';
 import { UIQueueItem } from '../elements/UIElements.js';
 // types
+// eslint-disable-next-line no-unused-vars
 import PlayerUI from '../PlayerUI.js';
 
 export default class QueueUI {

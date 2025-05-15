@@ -1,6 +1,5 @@
 import {
     createP,
-    createLongP,
     createTrackDiv,
     createElement,
 } from '../../Util.js';
@@ -31,11 +30,6 @@ export default class AlbumView {
         let title = document.createElement('h1');
         title.innerText = this.album.title;
         this.div.appendChild(title);
-
-        let menu = createP(title, '\u2630', (e) => {
-            //☰
-            this.manager.albumMenu.switch(title, this.album);
-        });
 
         let artist = document.createElement('h3');
         artist.innerText = this.album.artist;

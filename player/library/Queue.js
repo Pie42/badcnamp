@@ -39,6 +39,7 @@ export default class Queue {
         let len = this.scope.length,
             diff = len - this.queue.length;
         if (diff < 0) return;
+        // eslint-disable-next-line no-unused-vars
         let newQueue = [...Array(len)].map((i, j) =>
                 j < len ? this.queue[j] : j
             ),
@@ -99,7 +100,7 @@ export default class Queue {
                     }
                 }
                 track = this.scope[this.queue[this.pointer]];
-
+                break;
             default:
                 if (this.pointer >= this.scope.length) {
                     this.loop();

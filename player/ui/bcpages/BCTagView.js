@@ -14,7 +14,7 @@ export default class BCTagView {
         this.div = document.createElement('div');
         this.tag = tag
             .replaceAll(' ', '-')
-            .replaceAll(/[^a-zA-Z0-9\-]/g, '')
+            .replaceAll(/[^a-zA-Z0-9-]/g, '')
             .replaceAll(/-+/g, '-');
         this.rawTag = tag;
         this.switch(this.tag);

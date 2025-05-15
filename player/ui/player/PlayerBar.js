@@ -2,8 +2,11 @@ import settings from '../../constants/PlayerConstants.js';
 import ControlsUI from './ControlsUI.js';
 import { getImageType, tformat, getStyle } from '../../Util.js';
 // types
+// eslint-disable-next-line no-unused-vars
 import PlayerUI from '../PlayerUI.js';
+// eslint-disable-next-line no-unused-vars
 import Track from '../../library/Track.js';
+// eslint-disable-next-line no-unused-vars
 import Artist from '../../library/Artist.js';
 
 export default class PlayerBar {

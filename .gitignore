@@ -1,2 +1,6 @@
 .vscode/
 jsconfig.json
+node_modules/
+package-lock.json
+package.json
+eslint.config.mjs

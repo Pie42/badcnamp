@@ -200,27 +200,34 @@ export default class RemoteAlbum {
     }
 
     get previewTrack() {
-        return new Promise(async (resolve) => {
-            // get / choose file if necessary
-            if (!this.file) {
-                // loadAll exits early if all tracks are loaded already
-                await this.loadAll();
-                let tracks = [...this.#tracks];
-                tracks.sort((a, b) => a.duration - b.duration);
-                let track = tracks[(tracks.length / 2) | 0];
-                this.trackIndex = track.id;
-                this.trackTitle = track.title;
-                this.file = track.file;
-                this.track = track;
-            }
-            // re-update file if necessary
-            if (isOutdated(this.file)) {
-                await this.refetchAll();
-                this.file = this.#tracks[this.trackIndex].file;
-                this.track.file = this.file;
-            }
-            // return the track
-            resolve(this.track);
+        return new Promise((resolve) => {
+            // Using a regular chain of Promises instead of async/await in executor
+            Promise.resolve().then(() => {
+                // get / choose file if necessary
+                if (!this.file) {
+                    // loadAll exits early if all tracks are loaded already
+                    return this.loadAll().then(() => {
+                        let tracks = [...this.#tracks];
+                        tracks.sort((a, b) => a.duration - b.duration);
+                        let track = tracks[(tracks.length / 2) | 0];
+                        this.trackIndex = track.id;
+                        this.trackTitle = track.title;
+                        this.file = track.file;
+                        this.track = track;
+                    });
+                }
+            }).then(() => {
+                // re-update file if necessary
+                if (isOutdated(this.file)) {
+                    return this.refetchAll().then(() => {
+                        this.file = this.#tracks[this.trackIndex].file;
+                        this.track.file = this.file;
+                    });
+                }
+            }).then(() => {
+                // return the track
+                resolve(this.track);
+            });
         });
     }
 

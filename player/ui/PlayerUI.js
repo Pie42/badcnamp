@@ -4,12 +4,12 @@ import ControlsUI from './player/ControlsUI.js';
 import PiPUI from './player/PiPUI.js';
 import QueueUI from './player/QueueUI.js';
 import ScrobbleUI from './player/ScrobbleUI.js';
-import settings from '../constants/PlayerConstants.js';
 import TrackMenu from './menu/TrackMenu.js';
 import AlbumMenu from './menu/AlbumMenu.js';
 import PlayerBar from './player/PlayerBar.js';
 import NewPiPUI from './player/NewPiPUI.js';
 // types
+// eslint-disable-next-line no-unused-vars
 import LibraryManager from '../library/LibraryManager.js';
 
 export default class PlayerUI {
@@ -124,6 +124,7 @@ export default class PlayerUI {
         this.scrobbleui.registerEvents();
         this.div.appendChild(this.scrobbleui.div);
 
+        // eslint-disable-next-line no-constant-condition
         if ('documentPictureInPicture' in window && false) {
             this.pipui = new NewPiPUI(this);
             this.pipui.registerEvents();
@@ -223,6 +224,7 @@ export default class PlayerUI {
             this.next();
         });
         this.audio.addEventListener('pause', () => {
+            // eslint-disable-next-line no-undef
             document.title = badcnamp.state.uimanager.browseui.title;
             this.isPlaying = false;
             this.audioStateChange('pause');

@@ -184,7 +184,7 @@ function doTheFunkyTitleThing(trackInfo) {
     // the artist
     let titles = trackInfo.map((i) => removeGroups(i.title)).join('\n'),
         numbering = titles.match(
-            /([\d\w\. ]+)(\d)([\. ]*)(?!\n)\D.+\n(\1(?!\2)\d\3)/
+            /([\d\w. ]+)(\d)([. ]*)(?!\n)\D.+\n(\1(?!\2)\d\3)/
         ),
         rumbening = numbering
             ? new RegExp(numbering[4].replaceAll(/\d/g, '\\d+'), 'g')
@@ -208,7 +208,7 @@ function doTheFunkyTitleThing(trackInfo) {
  */
 function guessTheTitle(artist, title) {
     let numbering =
-            title.match(/([\d\w\. ]+)(\d)([\. ]*)(?!\n)(\D.+)/)?.[4] || title,
+            title.match(/([\d\w. ]+)(\d)([. ]*)(?!\n)(\D.+)/)?.[4] || title,
         dashed = numbering.match(/(.+)( - )(.+)/),
         split = dashed
             ? dashed
@@ -226,12 +226,12 @@ function guessTheTitle(artist, title) {
  */
 function splitArtists(artist) {
     try {
-        let split = artist.split(/(?: vs | \& | feat\. | x |\, | \+ | ?\/ ?)/i);
+        let split = artist.split(/(?: vs | & | feat\. | x |, | \+ | ?\/ ?)/i);
         split.splitters = artist.split(
-            /( vs\.? | \& | feat\. | x |\, | \+ | ?\/ ?)/i
+            /( vs\.? | & | feat\. | x |, | \+ | ?\/ ?)/i
         );
         return split;
-    } catch (error) {
+    } catch {
         return [artist];
     }
 }
@@ -244,7 +244,7 @@ function splitArtists(artist) {
 function isOutdated(track) {
     return (
         !track.file ||
-        track.file.match(/ts=(.+?)\&/)[1] * 1000 - Date.now() < 5_000_000
+        track.file.match(/ts=(.+?)&/)[1] * 1000 - Date.now() < 5_000_000
     );
 }
 
@@ -295,9 +295,11 @@ async function upgradeLibrary(library, max = 0, dryRun = false) {
             /*tags: !Math.min(
             ...badcnamp.state.library.albums.map((i) => i?.tags?.length)
         ),*/
+            // eslint-disable-next-line no-undef
             tags: badcnamp.state.library.albums
                 .filter((i) => !i?.tags?.length)
                 .map((i) => i.id),
+            // eslint-disable-next-line no-undef
             durations: badcnamp.state.library.albums
                 .filter((i) => i.tracks.some((j) => !j.duration))
                 .map((i) => i.id),
@@ -314,6 +316,7 @@ async function upgradeLibrary(library, max = 0, dryRun = false) {
         console.log(
             'Exporting library. Please save this somewhere safe in case something breaks!'
         );
+        // eslint-disable-next-line no-undef
         console.log(badcnamp.export());
         //if (Object.values(features).some((i) => i)) {
         if (albumsToUpgrade.length) {
@@ -464,6 +467,7 @@ function filterArray(array, method, data) {
             break;
         case 'string':
             filtered = filtered.filter((i) => i.match(data));
+            break;
         case 'none':
             break;
         default:
@@ -503,7 +507,7 @@ function accordion(headerText, size = 'h4') {
 
 function getLinkType(link) {
     let type;
-    if (!/https\:\/\//.test(link)) return false;
+    if (!/https:\/\//.test(link)) return false;
     if (link.match(/bandcamp\.com\/tag\//)) {
         type = 'tag';
     } else if (/(album|track)/.test(link)) {
@@ -685,7 +689,7 @@ function sleep(seconds, callback = null) {
 }
 
 const stupidRegex =
-    /^(.+?) ?([^\p{Quotation_Mark}\p{Dash}\p{L}\p{White_Space}\p{Terminal_Punctuation}\p{N}\[\]\(\)\{\}~\^_&\/$\\\uFEFF]) ?(?!\p{LC})((?:(?!\2).)+)$/u;
+    /^(.+?) ?([^\p{Quotation_Mark}\p{Dash}\p{L}\p{White_Space}\p{Terminal_Punctuation}\p{N}[\](){}~^_&/$\\\uFEFF]) ?(?!\p{LC})((?:(?!\2).)+)$/u;
 
 export {
     createP,

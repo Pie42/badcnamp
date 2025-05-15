@@ -161,6 +161,7 @@ export default class NewPiPUI {
         if (this.pipWindow) {
             this.pipWindow.close();
         } else {
+            // eslint-disable-next-line no-undef
             this.pipWindow = await documentPictureInPicture.requestWindow({
                 initialAspectRatio: 1,
                 width: 200,

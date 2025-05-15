@@ -30,12 +30,14 @@ export default class PiPUI {
 
         // firefox doesn't have the picture-in-picture api
         // so we show the video element (so the user can manually pip it)
-        this.rendering = !'pictureInPictureEnabled' in document;
+        this.rendering = !('pictureInPictureEnabled' in document);
+        // to help with transitioning between songs
+        this.transitionState = false;
 
         this.div.appendChild(this.canvas);
         this.div.appendChild(this.video);
 
-        this.events = ['timeupdate', 'loadedmetadata', 'pause', 'play'];
+        this.events = ['timeupdate', 'loadedmetadata', 'pause', 'play', 'ended'];
         this.videoEvents = ['enterpictureinpicture', 'leavepictureinpicture'];
         this.playing = undefined;
 
@@ -115,7 +117,8 @@ export default class PiPUI {
         this.durationWidth = this.ctx.measureText(
             tformat(this.player.audio.duration, this.player.audio.duration)
         ).width;
-        this.pause();
+        this.transitionState = false;
+        //this.pause();
     }
 
     pause() {
@@ -138,6 +141,7 @@ export default class PiPUI {
         );
         this.ctx.globalAlpha = 1;
         this.canvasStream.requestFrame?.();
+        if (this.transitionState) return;
         let video = this.video;
         video.pause();
         //setTimeout(this.video.pause(), 100);
@@ -147,6 +151,10 @@ export default class PiPUI {
         console.log('play pressed');
         this.audioIsPlaying = true;
         this.video.play();
+    }
+
+    ended() {
+        this.transitionState = true;
     }
 
     enterpictureinpicture() {
@@ -179,7 +187,7 @@ export default class PiPUI {
         }
         this.videoIsPausing = true;
         await this.video.play();
-        !this.player.audio.paused && this.player.audio.pause();
+        !this.player.audio.paused && !this.transitionState && this.player.audio.pause();
         setTimeout(async () => {await this.video.pause()}, 100);
     }
 
@@ -208,8 +216,8 @@ export default class PiPUI {
         for (let i of this.videoEvents) {
             this.video.addEventListener(i, this[i].bind(this));
         }
-        //this.video.addEventListener('pause', this.videoPause.bind(this));
-        //this.video.addEventListener('play', this.videoPlay.bind(this));
+        this.video.addEventListener('pause', this.videoPause.bind(this));
+        this.video.addEventListener('play', this.videoPlay.bind(this));
         //this.timeupdate();
         this.stream = this.canvas.captureStream();
         /**

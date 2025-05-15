@@ -1,7 +1,7 @@
 import DataLoader from '../state/DataLoader.js';
 import AlbumView from './browse/AlbumView.js';
 import AlbumsView from './browse/AlbumsView.js';
-import { createP, getLinkType } from '../Util.js';
+import { getLinkType } from '../Util.js';
 import TracksView from './browse/TracksView.js';
 import ArtistsView from './browse/ArtistsView.js';
 import ArtistView from './browse/ArtistView.js';
@@ -149,7 +149,7 @@ export default class BrowseUI {
                 case 'tag':
                     this.switchUI(
                         'bctag',
-                        link.match(/\/tag\/([a-zA-Z\-]+)/)[1]
+                        link.match(/\/tag\/([a-zA-Z-]+)/)[1]
                     );
                     break;
                 case 'label':
@@ -176,7 +176,7 @@ export default class BrowseUI {
         profileSelect.appendChild(newProfileOption);
         profileSelect.selectedIndex =
             this.library.profileManager.activeProfileIndex;
-        profileSelect.onchange = (e) => {
+        profileSelect.onchange = () => {
             let item = profileSelect.selectedOptions[0];
             if (item.value == 'New Profile...') {
                 let newProfile = prompt(
@@ -309,20 +309,22 @@ export default class BrowseUI {
                 this.title = type;
                 this.switchUI(type, null, false);
                 break;
-            case 'album':
+            case 'album': {
                 let album = this.library.albums[id];
                 this.title = album.title;
                 this.switchUI('album', album, false);
                 break;
+            }
             case 'artist':
                 this.title = this.library.artists[id].rawName;
                 this.switchUI(type, id, false);
                 break;
-            case 'playlist':
+            case 'playlist': {
                 let playlist = this.library.playlists[id];
                 this.title = playlist.name;
                 this.switchUI(type, playlist, false);
                 break;
+            }
             case 'localsearch':
                 this.title = 'Search';
                 this.switchUI('localsearch', id, false);

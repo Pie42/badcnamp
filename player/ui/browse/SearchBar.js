@@ -86,6 +86,7 @@ export default class SearchBar {
 
     update(/*type*/) {
         let type = this.local ? 'local' : 'remote',
+            // eslint-disable-next-line no-unused-vars
             alternate = getLinkType(this.input.value);
         if (type != this.type) {
             this.clear();
@@ -119,7 +120,7 @@ export default class SearchBar {
                     new SearchResult().set(
                         {
                             tag: this.input.value.match(
-                                /\/tag\/([a-zA-Z\-]+)/
+                                /\/tag\/([a-zA-Z-]+)/
                             )[1],
                         },
                         {

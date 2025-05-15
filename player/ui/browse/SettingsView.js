@@ -31,6 +31,7 @@ class Setting {
 }
 
 export default class SettingsView {
+    // eslint-disable-next-line no-unused-vars
     constructor(manager, data) {
         this.manager = manager;
         this.library = this.manager.library;

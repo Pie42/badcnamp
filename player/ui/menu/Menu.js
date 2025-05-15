@@ -182,7 +182,7 @@ export default class Menu {
         newPlaylistOption.innerText = 'New Playlist...';
         this.tempMenu.appendChild(newPlaylistOption);
         this.tempMenu.selectedIndex = 0;
-        this.tempMenu.onchange = (e) => {
+        this.tempMenu.onchange = () => {
             let item = this.tempMenu.selectedOptions[0],
                 index = this.tempMenu.selectedIndex;
             if (item.value == 'New Playlist...') {
@@ -202,6 +202,7 @@ export default class Menu {
         this.div.insertBefore(this.tempMenu, this.buttons[4].div);
     }
 
+    // eslint-disable-next-line no-unused-vars
     addToPlaylist(playlist) {}
 
     goToArtist() {
@@ -225,6 +226,7 @@ export default class Menu {
 
     goToAlbum() {}
 
+    // eslint-disable-next-line no-unused-vars
     getArtists(n) {}
 
     close() {

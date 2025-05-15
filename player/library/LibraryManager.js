@@ -10,6 +10,7 @@ import {
 import Playlist from './Playlist.js';
 import Timer from '../Timer.js';
 import FixedQueue from './FixedQueue.js';
+// eslint-disable-next-line no-unused-vars
 import Track from './Track.js';
 
 export default class LibraryManager {
@@ -31,7 +32,7 @@ export default class LibraryManager {
         this.profile = undefined;
     }
 
-    load(profile) {
+    load() {
         let t = Timer.start('Profile load');
 
         this.tags = {};
@@ -87,7 +88,7 @@ export default class LibraryManager {
         }
 
         if (this.scope2.load()) {
-            this.play(this.scope2.playing).then((i) => {
+            this.play(this.scope2.playing).then(() => {
                 this.audio.currentTime = DataLoader.getRawP('time');
                 this.audio.pause();
             });
@@ -135,7 +136,7 @@ export default class LibraryManager {
                 if (same) break;
                 this.audio.src = track.file;
                 this.audio.currentTime = 0;
-                this.audio.play().catch((e) => {});
+                this.audio.play().catch(() => {});
                 break;
             // connection or cors error
             // display an alert, then try again half a second after it's closed
@@ -146,11 +147,13 @@ export default class LibraryManager {
             // uncaught 404 error
             // attempt to go to the next track
             case 0:
-                let canPlay = await this.uimanager.playerui.prepareNextTrack();
-                if (canPlay) {
-                    this.uimanager.playerui.next();
+                { 
+                    let canPlay = await this.uimanager.playerui.prepareNextTrack();
+                    if (canPlay) {
+                        this.uimanager.playerui.next();
+                    }
+                    break;
                 }
-                break;
         }
     }
 
@@ -159,7 +162,7 @@ export default class LibraryManager {
      * @param {Album} album The album to refetch
      * @param {boolean} reset Whether or not to fully reset it
      */
-    async refetch(album, reset = false) {
+    async refetch(album) {
         // 2 = successful, 1 = internet error / other misc error, 0 = not found
         let successful = 2;
         await fetch(settings.path + album.link)
@@ -189,7 +192,7 @@ export default class LibraryManager {
                         album.ok = false;
                         album.lastChecked = Date.now();
                         successful = 1;
-                        throw 'Parsing error';
+                        throw `Parsing error: ${e}`;
                     }
                     let trackInfo = tralbumData.trackinfo,
                         trackPointer = 0,

@@ -42,6 +42,7 @@ export default class TagView {
         /*let toBandcamp = document.createElement('h2');
         toBandcamp.innerText = '(view on bandcamp)';
         this.div.appendChild(toBandcamp);*/
+        // eslint-disable-next-line no-unused-vars
         let toBandcamp = createP(this.div, '(view on bandcamp)', () => {
             manager.switchUI('bctag', data);
         });

@@ -62,7 +62,7 @@ export default class TrackMenu extends Menu {
                     let artists = splitArtists(e.rawArtistString);
                     context.artists = artists.map((i) => i.toLocaleLowerCase());
                     context.rawArtists = artists;
-                    context.rawArtistString = data.artist;
+                    context.rawArtistString = e.rawArtistString;
                 }
                 context.title = e.title;
                 context.broken = false;

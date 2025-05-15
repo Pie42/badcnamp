@@ -1,6 +1,5 @@
 import LibraryManager from "../library/LibraryManager.js";
 import UIManager from "../ui/UIManager.js";
-import DataLoader from "./DataLoader.js";
 import ProfileManager from "./ProfileManager.js";
 
 export default class PlayerState {
