@@ -20,6 +20,29 @@ function createP(parentElement, innerText, onclick, classes = []) {
     return p;
 }
 
+function iconLink(type) {
+    return `resources/icons/${type}-fill-svgrepo-com.svg`;
+}
+
+/**
+ *
+ * @param {HTMLDivElement} parentElement
+ * @param {String} type
+ * @param {Function} onclick
+ * @param {String[]} [classes=[]]
+ * @returns {HTMLParagraphElement}
+ */
+function createIcon(parentElement, type, onclick, classes = []) {
+    let img = document.createElement('img');
+    img.src = iconLink(type);
+    img.classList.add('pointer-hover');
+    img.classList.add(...classes);
+    //p.style.display = 'inline';
+    img.onclick = onclick;
+    parentElement.appendChild(img);
+    return img;
+}
+
 /**
  * Creates a 'p' element inside of a div with classes to let it truncate the 'p' via css.
  * This function is mostly meant to be used for anything that isn't explicitly defined in
@@ -666,6 +689,8 @@ const stupidRegex =
 
 export {
     createP,
+    iconLink,
+    createIcon,
     createLongP,
     parseTralbumData,
     parseTags,

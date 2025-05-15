@@ -130,6 +130,15 @@ body>div {
 .player-control {
     display: inline;
     font-size: 50px;
+    height: 50px;
+    width: 50px;
+    filter: invert(68%) sepia(18%) saturate(235%) hue-rotate(93deg) brightness(89%) contrast(84%);
+}
+
+.player-control:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transition-duration: 0.25s;
+    cursor: pointer;
 }
 
 .track-p {
@@ -298,7 +307,11 @@ div.player-bar .player-bar-queue .queue-item {
     display: flex;
 }
 
-.player-bar img {
+div.player-bar .player-control {
+    padding-block: calc(5vh - 25px);
+}
+
+.player-bar-cover {
     width: 10%;
 }
 

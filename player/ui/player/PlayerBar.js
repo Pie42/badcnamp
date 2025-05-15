@@ -29,6 +29,7 @@ export default class PlayerBar {
         this.supplementalDiv.classList.add('player-bar-queue');
         this.queueDiv = document.createElement('div');
         this.cover = document.createElement('img');
+        this.cover.classList.add('player-bar-cover');
         //this.cover2 = document.createElement('img');
         this.wordsBar = document.createElement('div');
         this.wordsBar.addEventListener('contextmenu', (e) => {

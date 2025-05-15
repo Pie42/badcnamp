@@ -523,6 +523,7 @@ Are you still sure you want to add it?`)
     async fix(album, switchViews = true) {
         let index = this.albums.indexOf(album),
             link = album.link;
+        if (link.map) link = link[0];
         album.link = '';
         let newAlbum = await this.add(link);
         if (!newAlbum) {
@@ -530,8 +531,10 @@ Are you still sure you want to add it?`)
             console.warn(`Unknown error while re-adding album ${album.title}; aborting!`)
             return;
         }
+        this.refreshTrackIds(newAlbum);
         this.removeAlbum(album);
         this.albums.splice(index, 0, this.albums.pop());
+        this.save();
         if (switchViews) {
             await this.uimanager.browseui.switchUI('album', this.albums[index]);
             this.uimanager.browseui.history.pop();
