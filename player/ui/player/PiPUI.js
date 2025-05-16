@@ -21,7 +21,6 @@ export default class PiPUI {
         this.video.playsInline = true;
         this.video.autoplay = true;
         this.video.controls = true;
-        //this.video.muted = true;
 
         this.titleWidth = 0;
         this.artistWidth = 0;
@@ -102,6 +101,16 @@ export default class PiPUI {
         );
     }
 
+    // note: this function probably shouldn't be called in response to any user action except entering picture-in-picture
+    async updatePaused() {
+        if (!this.video.paused) return;
+        this.actionIsFake = true;
+        this.pause();
+        await this.video.play();
+        this.video.pause();
+        this.actionIsFake = false;
+    }
+
     scrollFunction(t, size) {
         if (size <= this.size) {
             return 10;
@@ -128,33 +137,32 @@ export default class PiPUI {
     }
 
     pause() {
-        console.log('pause');
-        this.ctx.drawImage(this.player.cover, 0, 0, this.size, this.size);
-        this.drawInfo(0);
-        this.ctx.fillStyle = 'rgba(255, 255, 255)';
-        this.ctx.globalAlpha = 0.5;
-        this.ctx.fillRect(
-            this.size / 4,
-            this.size / 6,
-            this.size / 8,
-            (2 * this.size) / 3
-        );
-        this.ctx.fillRect(
-            (5 * this.size) / 8,
-            this.size / 6,
-            this.size / 8,
-            (2 * this.size) / 3
-        );
-        this.ctx.globalAlpha = 1;
-        this.canvasStream.requestFrame?.();
-        if (this.transitionState) return;
+        if (this.rendering) {
+            this.ctx.drawImage(this.player.cover, 0, 0, this.size, this.size);
+            this.drawInfo(0);
+            this.ctx.fillStyle = 'rgba(255, 255, 255)';
+            this.ctx.globalAlpha = 0.5;
+            this.ctx.fillRect(
+                this.size / 4,
+                this.size / 6,
+                this.size / 8,
+                (2 * this.size) / 3
+            );
+            this.ctx.fillRect(
+                (5 * this.size) / 8,
+                this.size / 6,
+                this.size / 8,
+                (2 * this.size) / 3
+            );
+            this.ctx.globalAlpha = 1;
+            this.canvasStream.requestFrame?.();
+        }
+        if (this.transitionState || this.actionIsFake) return;
         let video = this.video;
         !this.videoIsPausing && video.pause();
-        //setTimeout(this.video.pause(), 100);
     }
 
     play() {
-        console.log('play pressed');
         this.audioIsPlaying = true;
         this.video.play();
     }
@@ -166,17 +174,17 @@ export default class PiPUI {
     enterpictureinpicture() {
         this.rendering = true;
         this.player.setActionHandlers();
-        //this.drawInfo(this.player.audio.currentTime);
         this.timeupdate();
+        this.updatePaused();
     }
 
     leavepictureinpicture() {
-        this.timeupdate();
         this.rendering = false;
         this.player.setActionHandlers();
     }
 
     pip() {
+        if (!this.playing) return;
         if (this.pipapi) {
             if (document.pictureInPictureElement) {
                 document.exitPictureInPicture();
@@ -190,6 +198,8 @@ export default class PiPUI {
             if (this.visible) {
                 this.video.style.display = 'none';
             } else {
+                this.timeupdate();
+                this.updatePaused();
                 this.video.style.display = 'block';
             }
             this.visible = !this.visible;
@@ -197,7 +207,7 @@ export default class PiPUI {
     }
 
     async videoPause() {
-        console.log('video pause');
+        if (this.actionIsFake) return;
         if (this.videoIsPausing) {
             this.videoIsPausing = false;
             return;
@@ -205,19 +215,16 @@ export default class PiPUI {
         this.videoIsPausing = true;
         await this.video.play();
         !this.player.audio.paused && !this.transitionState && this.player.audio.pause();
-        setTimeout(async () => {await this.video.pause()}, 50);
+        setTimeout(async () => {this.video.pause()}, 50);
     }
 
     videoPlay() {
-        console.log('video play');
-        //console.log(this.videoIsPausing, this.video.paused);
+        if (this.actionIsFake) return;
         if (this.audioIsPlaying) {
             this.audioIsPlaying = false;
             return;
         }
         if (this.videoIsPausing) {
-            console.log('video is still pausing, prease hab patiensu');
-            //this.videoIsPausing = false;
             return;
         }
         this.player.audio.play();
@@ -235,12 +242,13 @@ export default class PiPUI {
         }
         this.video.addEventListener('pause', this.videoPause.bind(this));
         this.video.addEventListener('play', this.videoPlay.bind(this));
-        //this.timeupdate();
         this.stream = this.canvas.captureStream();
         /**
          * @type {CanvasCaptureMediaStreamTrack}
          */
         this.canvasStream = this.stream.getTracks()[0];
         this.video.srcObject = this.stream;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.canvasStream.requestFrame?.();
     }
 }
