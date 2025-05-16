@@ -12,12 +12,11 @@ export default class PiPUI {
         this.ctx = this.canvas.getContext('2d');
         this.ctx.textBaseline = 'top';
 
-        this.div.style.display = 'none';
-
         this.size = 500;
 
         this.canvas.width = this.size;
         this.canvas.height = this.size;
+        this.canvas.style.display = 'none';
 
         this.video.playsInline = true;
         this.video.autoplay = true;
@@ -30,7 +29,14 @@ export default class PiPUI {
 
         // firefox doesn't have the picture-in-picture api
         // so we show the video element (so the user can manually pip it)
-        this.rendering = !('pictureInPictureEnabled' in document);
+        this.pipapi = 'pictureInPictureEnabled' in document;
+        this.rendering = !this.pipapi;
+        this.visible = false;
+        if (this.pipapi) {
+            this.div.style.display = 'none';
+        } else {
+            this.video.style.display = 'none';
+        }
         // to help with transitioning between songs
         this.transitionState = false;
 
@@ -143,7 +149,7 @@ export default class PiPUI {
         this.canvasStream.requestFrame?.();
         if (this.transitionState) return;
         let video = this.video;
-        video.pause();
+        !this.videoIsPausing && video.pause();
         //setTimeout(this.video.pause(), 100);
     }
 
@@ -171,11 +177,22 @@ export default class PiPUI {
     }
 
     pip() {
-        if (document.pictureInPictureElement) {
-            document.exitPictureInPicture();
-        } else if (document.pictureInPictureEnabled) {
-            this.video.requestPictureInPicture();
-            this.player.setActionHandlers();
+        if (this.pipapi) {
+            if (document.pictureInPictureElement) {
+                document.exitPictureInPicture();
+                this.visible = false;
+            } else if (document.pictureInPictureEnabled) {
+                this.video.requestPictureInPicture();
+                this.player.setActionHandlers();
+                this.visible = true;
+            }
+        } else {
+            if (this.visible) {
+                this.video.style.display = 'none';
+            } else {
+                this.video.style.display = 'block';
+            }
+            this.visible = !this.visible;
         }
     }
 
@@ -188,7 +205,7 @@ export default class PiPUI {
         this.videoIsPausing = true;
         await this.video.play();
         !this.player.audio.paused && !this.transitionState && this.player.audio.pause();
-        setTimeout(async () => {await this.video.pause()}, 100);
+        setTimeout(async () => {await this.video.pause()}, 50);
     }
 
     videoPlay() {
