@@ -146,6 +146,12 @@ class UIRemoteAlbum {
 
         new UIHeader(this.info, album.title, 'h5', ['album-header']);
         new UIHeader(this.info, album.artist, 'h6', ['album-header']);
+        this.info.onclick = async () => {
+            let track = await album.previewTrack;
+            console.log(track);
+            manager.library.play(track);
+            manager.library.scope2.notInQueue = true;
+        }
 
         this.div.appendChild(this.info);
     }

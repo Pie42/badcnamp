@@ -341,7 +341,7 @@ export default class PlayerUI {
             case 'queue':
                 this.currentDiv = this.queueui.div;
                 this.currentDiv.style.display = 'block';
-                this.queueui.current.div.scrollIntoView({
+                this.queueui.current?.div?.scrollIntoView?.({
                     behavior: 'smooth',
                     block: 'start',
                 });

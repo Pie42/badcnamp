@@ -156,13 +156,13 @@ body>div {
 }
 
 .tag-button {
-    display: inline;
+    display: inline-block;
     margin: 2px;
     border: solid;
     border-width: 1px;
     border-radius: 4px;
     padding: 6px;
-    float: left;
+    /*float: left;*/
     cursor: pointer;
 }
 
@@ -204,7 +204,7 @@ body>div {
     line-height: calc(1.5em - 2px);
     padding-inline: 0px;
     margin-inline: 2px;
-    transition: border 0.2s ease-in-out;
+    /*transition: border 0.2s ease-in-out;*/
 }
 
 .browse-tab.selected {

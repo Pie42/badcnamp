@@ -149,16 +149,20 @@ export default class RemoteAlbum {
         let album = new RemoteAlbum(library);
 
         album.data = data;
-        album.artist = data.artist;
+        album.artist = data.album_artist || data.band_name;
         //album.image = `https://f4.bcbits.com/img/a${data.art_id}_16.jpg`;
-        album.image = getImageType(data.art_id, 23);
-        album.file = data.audio_url['mp3-128'];
+        album.image = getImageType(data.primary_image.image_id, 23);
         album.title = data.title;
-        album.link = data.tralbum_url;
+        album.link = data.item_url.replace(/\?from=.*/, '');
         album.id = album.link;
-        album.trackTitle = data.featured_track_title;
-        album.trackIndex = data.featured_track_number;
-        let [artist, title] = guessTheTitle(album.artist, album.trackTitle);
+        if (!data.featured_track) {
+            album.type = 'minimal';
+            return album;
+        }
+        album.file = data.featured_track.stream_url;
+        album.trackTitle = data.featured_track.title;
+        album.trackIndex = 0;
+        let [artist, title] = guessTheTitle(data.featured_track.band_name, data.featured_track.title);
         album.track = new Track({
             title: title,
             artist: artist,

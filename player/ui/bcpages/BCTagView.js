@@ -1,8 +1,5 @@
-import FetchManager from './FetchManager.js';
 import { createP, parseFromDom } from '../../Util.js';
 import {
-    UITab,
-    UIHeader,
     UIRemoteAlbum,
     UITagSection,
 } from '../elements/UIElements.js';
@@ -18,6 +15,7 @@ export default class BCTagView {
             .replaceAll(/-+/g, '-');
         this.rawTag = tag;
         this.switch(this.tag);
+        this.cursor = '*';
     }
 
     async switch(tag) {
@@ -26,16 +24,68 @@ export default class BCTagView {
             this.data = cached[0];
             this.populate(this.data);
         } else {
-            this.data = await FetchManager.fetch(
-                `https://bandcamp.com/tag/${tag}`,
+            /*this.data = await FetchManager.fetch(
+                'https://bandcamp.com/api/discover/1/discover_web',
                 this.parse,
-                this.populate.bind(this)
-            );
+                this.populate.bind(this),
+                'json',
+                {
+                    body: JSON.stringify({
+                        category_id: 1, // digital music
+                        cursor: '*', // '*' = first page, next page is response.cursor
+                        followed_bands: false, // only works if logged in
+                        geoname_id: 0, // used to narrow down location with opaque numbers
+                        include_result_types: ['a', 's'],
+                        size: 60, // number of results
+                        slice: 'top', // options are 'top', 'new', 'rand' (work as expected)
+                        tag_norm_names: [tag], // can put more tags in to narrow down results
+                        time_facet_id: null, // 0 is today, 1-7 are this week - 6 weeks ago, null is 'fresh'
+                    }),
+                    method: 'POST',
+                }
+            );*/
+            let top = fetch('https://bandcamp.com/api/discover/1/discover_web',
+                {
+                    body: JSON.stringify({
+                        category_id: 1, // digital music
+                        cursor: '*', // '*' = first page, next page is response.cursor
+                        followed_bands: false, // only works if logged in
+                        geoname_id: 0, // used to narrow down location with opaque numbers
+                        include_result_types: ['a', 's'],
+                        size: 60, // number of results
+                        slice: 'top', // options are 'top', 'new', 'rand' (work as expected)
+                        tag_norm_names: [tag], // can put more tags in to narrow down results
+                        time_facet_id: null, // 0 is today, 1-7 are this week - 6 weeks ago, null is 'fresh'
+                    }),
+                    method: 'POST',
+                }
+            ).then(i => i.json()),
+                related = fetch('https://bandcamp.com/api/tag_search/2/related_tags',
+                    {
+                        body: JSON.stringify({
+                            combo: true,
+                            size: 20,
+                            tag_names: [tag],
+                        }),
+                        method: 'POST',
+                    }
+                ).then(i => i.json());
+            this.data = await Promise.all([top, related]).then(i => {
+                let top = i[0],
+                    related = i[1];
+                this.cursor = top.cursor;
+                return {
+                    top,
+                    related,
+                };
+            });
+            this.populate(this.data);
             this.manager.remoteCache.tags[tag] = [this.data, Date.now()];
         }
     }
 
     parse(response) {
+        console.log(response);
         let fullData = JSON.parse(
                 parseFromDom(
                     response.match(/<div id="pagedata" data-blob="(.+?)"/)[1]
@@ -43,6 +93,7 @@ export default class BCTagView {
             ),
             data = {};
         window.fullData = fullData;
+        // related tags can be gotten from a POST request to https://bandcamp.com/api/tag_search/2/related_tags with the body {combo: true, size: 20, tag_names: [tag]}
         data.related = fullData.hub.related_tags;
         if (fullData.hub.tabs.length > 1) {
             data.collections = fullData.hub.tabs[0].collections;
@@ -55,131 +106,80 @@ export default class BCTagView {
     }
 
     populate(response) {
-        window.data = response;
         this.albums = { collections: [], digDeeper: [] };
         let tabs = document.createElement('div');
         tabs.classList.add('tab-group');
         tabs.style.marginBottom = '1vh';
 
-        let collections = document.createElement('div'),
-            digDeeper = document.createElement('div'),
+
+
+        let digDeeper = document.createElement('div'),
             digDeeperAlbums = document.createElement('div'),
             related = document.createElement('div'),
             title = document.createElement('h1');
 
         title.innerText = this.rawTag;
         this.div.appendChild(title);
-        if (response.collections) {
-            digDeeper.style.display = 'none';
-            response.collections = response.collections.filter(
-                (i) => i.items[0]['audio_url']
+
+        for (let i of response.top.results) {
+            let j = RemoteAlbum.fromFull(i, this.manager.library);
+            this.albums.digDeeper.push(j);
+            digDeeperAlbums.appendChild(
+                new UIRemoteAlbum(j, this.manager).div
             );
-            for (let collection of response.collections) {
-                let collectionDiv = document.createElement('div'),
-                    collectionAlbums = document.createElement('div'),
-                    n = this.albums.collections.push([]) - 1;
-                new UIHeader(collectionDiv, collection.render.title, 'h4');
-                collectionAlbums.classList.add('carousel');
-                for (let i of collection.items) {
-                    let j = RemoteAlbum.fromFull(i, this.manager.library);
-                    this.albums.collections[n].push(j);
-                    collectionAlbums.appendChild(
-                        new UIRemoteAlbum(j, this.manager).div
-                    );
-                }
-                collectionDiv.appendChild(collectionAlbums);
-                collections.appendChild(collectionDiv);
-            }
-
-            // the tabs are only necessary if there are multiple of them
-            let collectionsTab = new UITab(
-                    'Collections',
-                    () => {
-                        digDeeper.style.display = 'none';
-                        collections.style.display = 'block';
-                        selectedTab.classList.remove('selected');
-                        selectedTab = collectionsTab.tab;
-                        selectedTab.classList.add('selected');
-                    },
-                    tabs,
-                    ['browse-tab']
-                ),
-                digDeeperTab = new UITab(
-                    'Dig Deeper',
-                    () => {
-                        collections.style.display = 'none';
-                        digDeeper.style.display = 'block';
-                        selectedTab.classList.remove('selected');
-                        selectedTab = digDeeperTab.tab;
-                        selectedTab.classList.add('selected');
-                    },
-                    tabs,
-                    ['browse-tab']
-                ),
-                selectedTab = collectionsTab.tab;
-            selectedTab.classList.add('selected');
         }
-
-        if (response.dig_deeper) {
-            for (let i of response.dig_deeper.results[
-                response.dig_deeper.initial_settings
-            ].items) {
-                let j = RemoteAlbum.fromFull(i, this.manager.library);
-                this.albums.digDeeper.push(j);
-                digDeeperAlbums.appendChild(
-                    new UIRemoteAlbum(j, this.manager).div
-                );
-            }
-            digDeeper.appendChild(digDeeperAlbums);
-            let page = 1,
-                initialSettings = response.dig_deeper.initial_settings,
-                moreButton = createP(digDeeper, 'More Albums', () => {
-                    page++;
-                    fetch('https://bandcamp.com/api/hub/2/dig_deeper', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            filters: JSON.parse(initialSettings),
-                            page,
-                        }),
-                    })
-                        .then((i) => i.json())
-                        .then((i) => {
-                            if (!i.ok) {
-                                moreButton.style.display = 'none';
-                                alert('error while loading more stuff :(');
-                                console.log(i);
-                                return;
-                            }
-                            let items = i.items;
-                            response.dig_deeper.results[
-                                initialSettings
-                            ].items.push(...items);
-                            for (let item of items) {
-                                let j = RemoteAlbum.fromFull(
-                                    item,
-                                    this.manager.library
-                                );
-                                this.albums.digDeeper.push(j);
-                                digDeeperAlbums.appendChild(
-                                    new UIRemoteAlbum(j, this.manager).div
-                                );
-                            }
-                            if (!i.more_available)
-                                moreButton.style.display = 'none';
-                        });
-                });
-            moreButton.style = `
-                width: -webkit-fill-available;
-                text-align: center;
-                border: 1px solid var(--text-color);
-                border-radius: 4px;
-                font-size: 3vh;`;
-            //digDeeperAlbums.classList.add('carousel');
-        }
+        digDeeper.appendChild(digDeeperAlbums);
+        let moreButton = createP(digDeeper, 'More Albums', () => {
+                fetch('https://bandcamp.com/api/discover/1/discover_web',
+                {
+                    body: JSON.stringify({
+                        category_id: 1, // digital music
+                        cursor: this.cursor, // '*' = first page, next page is response.cursor
+                        followed_bands: false, // only works if logged in
+                        geoname_id: 0, // used to narrow down location with opaque numbers
+                        include_result_types: ['a', 's'],
+                        size: 60, // number of results
+                        slice: 'top', // options are 'top', 'new', 'rand' (work as expected)
+                        tag_norm_names: [this.tag], // can put more tags in to narrow down results
+                        time_facet_id: null, // 0 is today, 1-7 are this week - 6 weeks ago, null is 'fresh'
+                    }),
+                    method: 'POST',
+                })
+                    .then((i) => i.json())
+                    .then((i) => {
+                        if (!i.results || !i.results.length) {
+                            moreButton.style.display = 'none';
+                            alert('error while loading more stuff :(');
+                            console.log(i);
+                            return;
+                        }
+                        let items = i.results;
+                        response.top.results.push(...items);
+                        for (let item of items) {
+                            let j = RemoteAlbum.fromFull(
+                                item,
+                                this.manager.library
+                            );
+                            this.albums.digDeeper.push(j);
+                            digDeeperAlbums.appendChild(
+                                new UIRemoteAlbum(j, this.manager).div
+                            );
+                        }
+                        this.cursor = i.cursor;
+                        //if (!i.more_available)
+                            //moreButton.style.display = 'none';
+                    });
+            });
+        moreButton.style = `
+            width: -webkit-fill-available;
+            text-align: center;
+            border: 1px solid var(--text-color);
+            border-radius: 4px;
+            font-size: 3vh;`;
 
         let relatedSection = new UITagSection(
             related,
-            response.related.map((i) => i.name),
+            response.related.single_results[0].related_tags.map((i) => i.name),
             this.manager,
             'bctag',
             'none'
@@ -187,10 +187,10 @@ export default class BCTagView {
         relatedSection.div.firstChild.innerHTML = 'Related Tags';
 
         this.div.appendChild(tabs);
-        this.div.appendChild(collections);
-        this.div.appendChild(digDeeper);
         this.div.appendChild(related);
-        return response;
+        this.div.appendChild(document.createElement('br'));
+        this.div.appendChild(digDeeper);
+        //digDeeperAlbums.classList.add('carousel');
     }
 }
 
