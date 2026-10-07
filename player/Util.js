@@ -194,7 +194,7 @@ function doTheFunkyTitleThing(trackInfo) {
         titling = ' - ';
     } else {
         titling = titling.match(
-            /(.+)([^\p{L}\n \p{Pe}\p{Ps}\p{N}'.!?\-:,／])((?:.(?!\2))+)\n.+\2(?!\3)/iu
+            /(.+)([^\p{L}\n \p{Pe}\p{Ps}\p{N}'.!?\-:,／’])((?:.(?!\2))+)\n.+\2(?!\3)/iu
         )?.[2];
     }
     let titlinging = new RegExp(`(.+?)(${titling})(.+)`);
@@ -226,7 +226,7 @@ function guessTheTitle(artist, title) {
  */
 function splitArtists(artist) {
     try {
-        let split = artist.split(/(?: vs | & | feat\. | x |, | \+ | ?\/ ?)/i);
+        let split = artist.split(/(?: vs | & | feat\. | ft\. | x |, | \+ | ?\/ ?)/i);
         split.splitters = artist.split(
             /( vs\.? | & | feat\. | x |, | \+ | ?\/ ?)/i
         );
@@ -689,7 +689,7 @@ function sleep(seconds, callback = null) {
 }
 
 const stupidRegex =
-    /^(.+?) ?([^\p{Quotation_Mark}\p{Dash}\p{L}\p{White_Space}\p{Terminal_Punctuation}\p{N}[\](){}~^_&/$\\\uFEFF]) ?(?!\p{LC})((?:(?!\2).)+)$/u;
+    /^(.+?) ?([^\p{Quotation_Mark}\p{Dash}\p{L}\p{White_Space}\p{Terminal_Punctuation}\p{N}[\](){}~^_&/$\\\uFEFF’]) ?(?!\p{LC})((?:(?!\2).)+)$/u;
 
 export {
     createP,

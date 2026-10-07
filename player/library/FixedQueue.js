@@ -27,7 +27,7 @@ export default class FixedQueue {
             j,
             k;
 
-        if (startingIndex && startingIndex < len) {
+        if (startingIndex && startingIndex < len && startingIndex >= 0) {
             k = this.queue[0];
             this.queue[0] = this.queue[startingIndex];
             this.queue[startingIndex] = k;

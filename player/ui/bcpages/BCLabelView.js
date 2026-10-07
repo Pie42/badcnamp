@@ -32,7 +32,7 @@ export default class BCLabelView {
         let parsedData = {
                 artist: data.match(/<span class="title">(.+?)<\/span>/)[1],
                 location: data.match(
-                    /<span class="location.+?>(.+?)<\/span>/
+                    /<span class="location.+?>(.*?)<\/span>/
                 )[1],
                 image: data.match(/<img src="(.+?)" class="band-photo"/)?.[1],
                 header: data.match(
